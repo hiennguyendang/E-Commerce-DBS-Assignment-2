@@ -1,48 +1,75 @@
 import React, { useEffect, useState } from "react";
+import { useOutletContext } from "react-router-dom";
 import axiosInstance from "../utils/axiosConfig";
 import ProductList from "../components/product/ProductList";
 import ProductFilter from "../components/product/ProductFilter";
-// import Spinner from "../components/common/Spinner";
+import mockProducts from "../data/mockProducts";
 
 export default function HomePage({ onAddToCart }) {
+  const { searchTerm } = useOutletContext();  // 🔍 lấy searchTerm từ AppLayout
+
   const [products, setProducts] = useState([]);
   const [filtered, setFiltered] = useState([]);
   const [categories, setCategories] = useState([]);
-  // const [loading, setLoading] = useState(true);
 
+  // Lấy data lần đầu
   useEffect(() => {
     async function fetchData() {
       try {
-        const [prodRes, catRes] = await Promise.all([
-          axiosInstance.get("/products"),
-          axiosInstance.get("/categories"),
-        ]);
-        setProducts(prodRes.data);
-        setFiltered(prodRes.data);
-        setCategories(catRes.data);
-      } catch (err) {
-        console.error("Không thể tải dữ liệu:", err);
-      } finally {
-        // setLoading(false);
+        const res = await axiosInstance.get("/products");
+
+        const data = res?.data?.length ? res.data : mockProducts;
+
+        setProducts(data);
+        setFiltered(data);
+
+        const cats = [...new Set(data.map((p) => p.category))];
+        setCategories(cats);
+
+      } catch {
+        setProducts(mockProducts);
+        setFiltered(mockProducts);
+        setCategories([...new Set(mockProducts.map((p) => p.category))]);
       }
     }
+
     fetchData();
   }, []);
 
+  // Lọc theo search bar
+  useEffect(() => {
+    if (!searchTerm) {
+      setFiltered(products);
+      return;
+    }
+
+    const lower = searchTerm.toLowerCase();
+    setFiltered(
+      products.filter(
+        (p) =>
+          p.name.toLowerCase().includes(lower) ||
+          p.category.toLowerCase().includes(lower)
+      )
+    );
+  }, [searchTerm, products]);
+
+  // Lọc theo bộ lọc bên trái
   const handleFilter = (type, value) => {
     let result = [...products];
-    if (type === "category" && value) result = result.filter(p => p.category === value);
-    if (type === "maxPrice" && value) result = result.filter(p => p.price <= value);
+    if (type === "category" && value) result = result.filter((p) => p.category === value);
+    if (type === "maxPrice" && value) result = result.filter((p) => p.price <= value);
     setFiltered(result);
   };
-
-  // if (loading) return <Spinner message="Đang tải sản phẩm..." />;
 
   return (
     <div className="row g-4">
       <div className="col-lg-3">
-        <ProductFilter categories={categories} onFilter={handleFilter} />
+        <ProductFilter
+          categories={categories.map((c, i) => ({ id: i, name: c }))}
+          onFilter={handleFilter}
+        />
       </div>
+
       <div className="col-lg-9">
         <ProductList products={filtered} onAddToCart={onAddToCart} />
       </div>

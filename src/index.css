@@ -554,3 +554,28 @@ body {
   margin-bottom: 18px;
 }
 
+/* ===== Product Detail Page ===== */
+.product-detail-image {
+  border-radius: 12px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+}
+
+.product-detail-price {
+  color: #ee4d2d;
+  font-size: 1.8rem;
+  font-weight: 700;
+}
+
+.btn-bk {
+  background: #ee4d2d !important;
+  border-radius: 12px;
+  color: #fff !important;
+  padding: 10px 24px;
+  font-weight: 600;
+  transition: 0.2s;
+}
+
+.btn-bk:hover {
+  background: #d73211 !important;
+}
+

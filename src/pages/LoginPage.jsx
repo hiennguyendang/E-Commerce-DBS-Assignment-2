@@ -10,7 +10,7 @@ export default function LoginPage({ onLogin }) {
       <header className="login-header py-3">
         <div className="container d-flex align-items-center justify-content-center gap-2">
           <img
-            src={require("../assets/imgs/shopee-white.png")}
+            src={require("../assets/imgs/logoBK.png")}
             alt="Shopee Logo"
             style={{ height: "36px", width: "auto" }}
           />

@@ -1,16 +1,18 @@
-// AppLayout.jsx
-import React from "react";
+import React, { useState } from "react";
 import { Outlet } from "react-router-dom";
 import Header from "./Header";
 import Footer from "./Footer";
 
 export default function AppLayout({ user, onLogout }) {
+  const [searchTerm, setSearchTerm] = useState("");
+
   return (
-    <div className="app-shell d-flex flex-column min-vh-100">
-      <Header user={user} onLogout={onLogout} />
-      <main className="flex-grow-1" style={{ background: "#f8fafc" }}>
+    <div className="app-shell">
+      <Header user={user} onLogout={onLogout} onSearch={setSearchTerm} />
+      <main className="flex-grow-1 bg-light">
         <div className="container py-4">
-          <Outlet />
+          {/* Truyền searchTerm xuống tất cả trang con */}
+          <Outlet context={{ searchTerm }} />
         </div>
       </main>
       <Footer />
