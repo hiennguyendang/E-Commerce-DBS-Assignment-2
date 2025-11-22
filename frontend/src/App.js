@@ -14,15 +14,16 @@ import OrdersPage from "./pages/OrdersPage";
 import ProfilePage from "./pages/ProfilePage";
 import SellerDashboardPage from "./pages/SellerDashboardPage";
 import AdminDashboardPage from "./pages/AdminDashboardPage";
-import { cartAPI } from "./utils/api";
+import { cartAPI, getAuthToken, getUser, clearAuthData } from "./utils/api";
 import Toast from "./components/common/Toast";
 
 export default function App() {
   // Lấy user từ localStorage (nếu có phiên trước)
   const [user, setUser] = useState(() => {
     try {
-      const raw = localStorage.getItem("user");
-      return raw ? JSON.parse(raw) : null;
+      const token = getAuthToken();
+      if (!token) return null;
+      return getUser();
     } catch {
       return null;
     }
@@ -53,7 +54,7 @@ export default function App() {
   const handleLogout = () => {
     setUser(null);
     try {
-      localStorage.removeItem("user");
+      clearAuthData();
     } catch {}
   };
 

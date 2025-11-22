@@ -4,7 +4,7 @@ echo     DATABASE SETUP FOR SHOPEELIKE
 echo ============================================
 
 echo.
-echo This script will help you set up the database for ShopeeeLike E-Commerce
+echo This script will help you set up the database for Shopeelike E-Commerce
 echo.
 
 REM Get MySQL credentials
@@ -34,7 +34,7 @@ if %ERRORLEVEL% neq 0 (
 echo ✅ Database created successfully!
 
 echo [2/3] Importing schema...
-mysql -u %MYSQL_USER% -p%MYSQL_PASSWORD% %DB_NAME% < database/schema.sql
+mysql -u %MYSQL_USER% -p%MYSQL_PASSWORD% %DB_NAME% < database/shopeelike.sql
 
 if %ERRORLEVEL% neq 0 (
     echo ❌ Failed to import schema.
@@ -45,7 +45,7 @@ if %ERRORLEVEL% neq 0 (
 echo ✅ Schema imported successfully!
 
 echo [3/3] Importing sample data...
-mysql -u %MYSQL_USER% -p%MYSQL_PASSWORD% %DB_NAME% < database/mockup_data.sql
+mysql -u %MYSQL_USER% -p%MYSQL_PASSWORD% %DB_NAME% < database/mockup_data_shopeelike.sql
 
 if %ERRORLEVEL% neq 0 (
     echo ❌ Failed to import sample data.

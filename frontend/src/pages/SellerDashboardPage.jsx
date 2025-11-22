@@ -34,7 +34,7 @@ export default function SellerDashboardPage() {
       setLoading(true);
       const [productsRes, statsRes] = await Promise.all([
         axiosInstance.get("/seller/products"),
-        axiosInstance.get("/seller/stats")
+        axiosInstance.get("/reports/seller/stats")
       ]);
       console.log('✅ Products:', productsRes.data);
       console.log('✅ Stats:', statsRes.data);

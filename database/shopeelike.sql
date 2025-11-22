@@ -309,3 +309,180 @@ CREATE INDEX ix_addr_buyer    ON address(buyer_id, is_default);
 CREATE INDEX ix_addr_seller   ON address(seller_id, is_default);
 CREATE INDEX ix_order_buyer   ON orders(buyer_id);
 CREATE INDEX ix_oi_product    ON order_item(product_id, variant_code);
+
+-- ============================================================
+-- STORED FUNCTIONS
+-- ============================================================
+
+DELIMITER $$
+CREATE FUNCTION fn_monthly_revenue(p_year INT, p_month INT)
+RETURNS DECIMAL(14,2)
+DETERMINISTIC
+BEGIN
+  DECLARE v_total DECIMAL(14,2);
+
+  IF p_month < 1 OR p_month > 12 THEN
+    SIGNAL SQLSTATE '45000'
+      SET MESSAGE_TEXT = 'Invalid month. Must be between 1 and 12.';
+  END IF;
+
+  SELECT COALESCE(SUM(total_amount), 0)
+    INTO v_total
+  FROM orders
+  WHERE YEAR(order_date) = p_year
+    AND MONTH(order_date) = p_month
+    AND status IN ('Paid','Packing','Shipped','Completed');
+
+  RETURN v_total;
+END$$
+
+CREATE FUNCTION fn_seller_total_sold(p_seller_id CHAR(6))
+RETURNS BIGINT
+DETERMINISTIC
+BEGIN
+  DECLARE v_exists INT;
+  DECLARE v_total BIGINT;
+
+  SELECT COUNT(*) INTO v_exists
+  FROM seller
+  WHERE seller_id = p_seller_id;
+
+  IF v_exists = 0 THEN
+    SIGNAL SQLSTATE '45000'
+      SET MESSAGE_TEXT = 'Seller does not exist.';
+  END IF;
+
+  SELECT COALESCE(SUM(oi.qty), 0)
+    INTO v_total
+  FROM orders o
+  JOIN order_item oi ON oi.order_id = o.order_id
+  JOIN product p ON p.product_id = oi.product_id
+  WHERE p.seller_id = p_seller_id
+    AND o.status IN ('Paid','Packing','Shipped','Completed');
+
+  RETURN v_total;
+END$$
+DELIMITER ;
+
+-- ============================================================
+-- STORED PROCEDURES
+-- ============================================================
+
+DELIMITER $$
+CREATE PROCEDURE sp_get_orders_by_status(IN p_status VARCHAR(20))
+BEGIN
+  /*
+    Returns a list of orders with basic buyer info,
+    optionally filtered by status ('ALL' for no filter).
+  */
+  SELECT 
+    o.order_id,
+    o.order_date,
+    o.status,
+    o.total_amount,
+    ua.email       AS buyer_email,
+    ua.display_name AS buyer_name
+  FROM orders o
+  JOIN buyer b         ON b.user_id = o.buyer_id
+  JOIN user_account ua ON ua.user_id = b.user_id
+  WHERE (p_status IS NULL OR p_status = '' OR p_status = 'ALL' OR o.status = p_status)
+  ORDER BY o.order_date DESC;
+END$$
+
+CREATE PROCEDURE sp_get_seller_monthly_revenue(
+  IN p_seller_id CHAR(6),
+  IN p_year INT
+)
+BEGIN
+  /*
+    Returns monthly revenue for a seller in a given year.
+    Demonstrates GROUP BY and HAVING with input parameters.
+  */
+  DECLARE v_exists INT;
+
+  SELECT COUNT(*) INTO v_exists
+  FROM seller
+  WHERE seller_id = p_seller_id;
+
+  IF v_exists = 0 THEN
+    SIGNAL SQLSTATE '45000'
+      SET MESSAGE_TEXT = 'Seller does not exist.';
+  END IF;
+
+  SELECT 
+    MONTH(o.order_date) AS month,
+    SUM(oi.line_total)  AS revenue
+  FROM orders o
+  JOIN order_item oi ON oi.order_id = o.order_id
+  JOIN product p     ON p.product_id = oi.product_id
+  WHERE p.seller_id = p_seller_id
+    AND YEAR(o.order_date) = p_year
+    AND o.status IN ('Paid','Packing','Shipped','Completed')
+  GROUP BY MONTH(o.order_date)
+  HAVING SUM(oi.line_total) > 0
+  ORDER BY month;
+END$$
+
+CREATE PROCEDURE sp_get_seller_stats(
+  IN p_seller_id CHAR(6)
+)
+BEGIN
+  /*
+    Returns aggregated stats for a seller:
+    - number of active products
+    - number of orders containing seller products
+    - total revenue from those orders
+  */
+  DECLARE v_exists INT;
+
+  SELECT COUNT(*) INTO v_exists
+  FROM seller
+  WHERE seller_id = p_seller_id;
+
+  IF v_exists = 0 THEN
+    SIGNAL SQLSTATE '45000'
+      SET MESSAGE_TEXT = 'Seller does not exist.';
+  END IF;
+
+  SELECT
+    (SELECT COUNT(*) 
+       FROM product 
+      WHERE seller_id = p_seller_id 
+        AND status = 'Active') AS products,
+    (SELECT COUNT(DISTINCT o.order_id)
+       FROM orders o
+       JOIN order_item oi ON oi.order_id = o.order_id
+       JOIN product p     ON p.product_id = oi.product_id
+      WHERE p.seller_id = p_seller_id) AS orders,
+    (SELECT COALESCE(SUM(oi.line_total), 0)
+       FROM orders o
+       JOIN order_item oi ON oi.order_id = o.order_id
+       JOIN product p     ON p.product_id = oi.product_id
+      WHERE p.seller_id = p_seller_id
+        AND o.status IN ('Paid','Packing','Shipped','Completed')) AS revenue;
+END$$
+DELIMITER ;
+
+-- ============================================================
+-- ADDITIONAL TRIGGERS
+-- ============================================================
+
+DELIMITER $$
+CREATE TRIGGER ai_order_item_update_total
+AFTER INSERT ON order_item
+FOR EACH ROW
+BEGIN
+  /*
+    Keep orders.total_amount in sync with the sum of line_total
+    from order_item plus shipping_fee.
+  */
+  UPDATE orders o
+  JOIN (
+    SELECT order_id, SUM(line_total) AS subtotal
+    FROM order_item
+    WHERE order_id = NEW.order_id
+    GROUP BY order_id
+  ) t ON t.order_id = o.order_id
+  SET o.total_amount = t.subtotal + o.shipping_fee;
+END$$
+DELIMITER ;
