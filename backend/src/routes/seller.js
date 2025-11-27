@@ -88,13 +88,13 @@ router.get('/products', authenticateToken, requireSeller, async (req, res) => {
               MIN(pv.list_price) as min_price,
               MAX(pv.list_price) as max_price,
               SUM(pv.stock_qty) as total_stock,
-              (SELECT pi.url FROM product_image pi 
+              (SELECT TOP (1) pi.url FROM product_image pi 
                WHERE pi.product_id = p.product_id 
-               LIMIT 1) as image_url
+               ORDER BY pi.image_id ASC) as image_url
        FROM product p
        LEFT JOIN product_variant pv ON p.product_id = pv.product_id
        WHERE p.seller_id = ?
-       GROUP BY p.product_id
+       GROUP BY p.product_id, p.title, p.description, p.status, p.created_at
        ORDER BY p.created_at DESC`,
       [sellerId]
     );
@@ -277,7 +277,10 @@ router.put('/products/:id', [
 
     // Kiểm tra quyền sở hữu
     const [products] = await pool.execute(
-      `SELECT product_id FROM product WHERE product_id = ? AND seller_id = ?`,
+      `SELECT p.product_id
+       FROM product p
+       JOIN seller s ON p.seller_id = s.seller_id
+       WHERE p.product_id = ? AND s.user_id = ?`,
       [productId, req.user.id]
     );
 
@@ -285,13 +288,16 @@ router.put('/products/:id', [
       return res.status(404).json({ error: 'Product not found or access denied' });
     }
 
+    const statusValue =
+      typeof is_active === 'boolean' ? (is_active ? 'Active' : 'Hidden') : null;
+
     await pool.execute(
       `UPDATE product 
-       SET product_name = COALESCE(?, product_name),
+       SET title = COALESCE(?, title),
            description = COALESCE(?, description),
-           is_active = COALESCE(?, is_active)
+           status = COALESCE(?, status)
        WHERE product_id = ?`,
-      [product_name, description, is_active, productId]
+      [product_name, description, statusValue, productId]
     );
 
     res.json({ message: 'Product updated successfully' });
@@ -376,33 +382,52 @@ router.get('/orders', authenticateToken, requireSeller, async (req, res) => {
   try {
     const { status } = req.query;
 
+    // Lấy seller_id từ user hiện tại
+    const [sellers] = await pool.execute(
+      'SELECT seller_id FROM seller WHERE user_id = ?',
+      [req.user.id]
+    );
+
+    if (sellers.length === 0) {
+      return res.status(403).json({ error: 'User is not a seller' });
+    }
+
+    const sellerId = sellers[0].seller_id;
+
     let query = `
-      SELECT DISTINCT o.order_id, o.total_amount, o.order_status, o.created_at,
-             u.display_name as customer_name, u.email as customer_email,
-             sa.street_address, sa.ward, sa.district, sa.city,
-             COUNT(DISTINCT oi.order_item_id) as item_count
-      FROM \`order\` o
+      SELECT 
+        o.order_id,
+        o.order_date      AS created_at,
+        o.status          AS order_status,
+        o.total_amount,
+        ua.display_name   AS customer_name,
+        ua.email          AS customer_email,
+        COUNT(DISTINCT oi.line_no) AS item_count
+      FROM orders o
       JOIN order_item oi ON o.order_id = oi.order_id
-      JOIN product_variant pv ON oi.product_variant_id = pv.product_variant_id
-      JOIN product p ON pv.product_id = p.product_id
-      JOIN user_account u ON o.user_id = u.user_id
-      LEFT JOIN shipping_address sa ON o.shipping_address_id = sa.shipping_address_id
+      JOIN product p     ON p.product_id = oi.product_id
+      JOIN buyer b       ON b.user_id = o.buyer_id
+      JOIN user_account ua ON ua.user_id = b.user_id
       WHERE p.seller_id = ?
     `;
 
-    const params = [req.user.id];
+    const params = [sellerId];
 
     if (status) {
-      query += ` AND o.order_status = ?`;
+      query += ' AND o.status = ?';
       params.push(status);
     }
 
-    query += ` GROUP BY o.order_id ORDER BY o.created_at DESC`;
+    query += `
+      GROUP BY o.order_id, o.order_date, o.status, o.total_amount, ua.display_name, ua.email
+      ORDER BY o.order_date DESC
+    `;
 
     const [orders] = await pool.execute(query, params);
 
     res.json(orders);
   } catch (error) {
+    // eslint-disable-next-line no-console
     console.error('Get seller orders error:', error);
     res.status(500).json({ error: 'Failed to get orders' });
   }

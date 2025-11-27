@@ -16,7 +16,6 @@ export default function LoginForm({ onLogin }) {
     setLoading(true);
 
     try {
-      // Gọi API login
       const response = await axiosInstance.post("/auth/login", {
         email,
         password,
@@ -24,14 +23,13 @@ export default function LoginForm({ onLogin }) {
 
       const { token, user } = response.data;
 
-      // Lưu token và user vào localStorage
       localStorage.setItem("token", token);
       localStorage.setItem("user", JSON.stringify(user));
 
-      // Gọi callback
       onLogin(user);
       navigate("/app", { replace: true });
     } catch (err) {
+      // eslint-disable-next-line no-console
       console.error("Login error:", err);
       setError(err.response?.data?.error || "Đăng nhập thất bại!");
     } finally {
@@ -50,7 +48,7 @@ export default function LoginForm({ onLogin }) {
         <input
           type="email"
           className="form-control"
-          placeholder="Nhập email (ví dụ: seller1@demo.com)"
+          placeholder="Nhập email (vd: seller1@demo.com)"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
@@ -76,10 +74,26 @@ export default function LoginForm({ onLogin }) {
       </button>
 
       <div className="mt-3 text-center">
+        <small className="text-muted d-block mb-1">
+          Tài khoản test:
+        </small>
+        <small className="text-muted d-block">
+          <b>Seller:</b> seller1@demo.com / <b>password123</b>
+        </small>
+        <small className="text-muted d-block">
+          <b>Admin:</b> admin1@demo.com / <b>password123</b>
+        </small>
+        <small className="text-muted d-block">
+          <b>Buyer 1:</b> buyer1@demo.com / <b>password123</b>
+        </small>
+        <small className="text-muted d-block">
+          <b>Buyer 2:</b> buyer2@demo.com / <b>password123</b>
+        </small>
+        <small className="text-muted d-block mb-1">
+          <b>Buyer 3:</b> buyer3@demo.com / <b>password123</b>
+        </small>
         <small className="text-muted">
-          Tài khoản test: <b>seller1@demo.com</b> / <b>password123</b>
-          <br />
-          Hoặc đăng ký tài khoản buyer mới
+          Hoặc đăng ký tài khoản Buyer mới.
         </small>
       </div>
     </form>

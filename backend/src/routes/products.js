@@ -55,11 +55,11 @@ router.get('/', async (req, res) => {
         'active' AS status,
         COALESCE((SELECT MIN(v.list_price) FROM product_variant v WHERE v.product_id = p.product_id AND v.is_active = 1), 0) AS min_price,
         COALESCE((SELECT SUM(v.stock_qty) FROM product_variant v WHERE v.product_id = p.product_id AND v.is_active = 1), 0) AS stock_quantity,
-        (SELECT img.url FROM product_image img WHERE img.product_id = p.product_id ORDER BY img.image_id ASC LIMIT 1) AS primary_image
+        (SELECT TOP (1) img.url FROM product_image img WHERE img.product_id = p.product_id ORDER BY img.image_id ASC) AS primary_image
       FROM product p
       WHERE ${where}
       ORDER BY ${sortKey === 'min_price' ? 'min_price' : sortKey} ${orderKey}
-      LIMIT ${limit} OFFSET ${offset}`;
+      OFFSET ${offset} ROWS FETCH NEXT ${limit} ROWS ONLY`;
 
     const [rows] = await pool.execute(listSql, params);
 
@@ -99,16 +99,16 @@ router.get('/', async (req, res) => {
 router.get('/featured/list', async (req, res) => {
   try {
     const [rows] = await pool.execute(
-      `SELECT 
+      `SELECT TOP (8)
          p.product_id AS id,
          p.title AS name,
          p.created_at,
          COALESCE((SELECT MIN(v.list_price) FROM product_variant v WHERE v.product_id = p.product_id AND v.is_active = 1), 0) AS price,
-         (SELECT img.url FROM product_image img WHERE img.product_id = p.product_id ORDER BY img.image_id ASC LIMIT 1) AS primary_image
+         (SELECT TOP (1) img.url FROM product_image img WHERE img.product_id = p.product_id ORDER BY img.image_id ASC) AS primary_image
        FROM product p
        WHERE p.status = 'Active'
        ORDER BY p.created_at DESC
-       LIMIT 8`
+       `
     );
 
     res.json(rows.map(r => ({

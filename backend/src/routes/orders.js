@@ -56,7 +56,10 @@ async function ensureBuyerExists(connection, userId) {
 
 async function getOrCreateActiveCart(connection, buyerId) {
   const [c] = await connection.execute(
-    `SELECT cart_id FROM cart WHERE buyer_id = ? AND status = 'Active' ORDER BY created_at DESC LIMIT 1`,
+    `SELECT TOP (1) cart_id 
+     FROM cart 
+     WHERE buyer_id = ? AND status = 'Active' 
+     ORDER BY created_at DESC`,
     [buyerId]
   );
   if (c.length > 0) return c[0].cart_id;
@@ -68,7 +71,9 @@ async function getOrCreateActiveCart(connection, buyerId) {
 }
 
 async function getOrCreateDefaultService(connection) {
-  const [s] = await connection.execute('SELECT service_id FROM shipping_service ORDER BY service_id ASC LIMIT 1');
+  const [s] = await connection.execute(
+    'SELECT TOP (1) service_id FROM shipping_service ORDER BY service_id ASC'
+  );
   if (s.length > 0) return s[0].service_id;
   const [ins] = await connection.execute(
     `INSERT INTO shipping_service (carrier, service_name, est_days_min, est_days_max, base_fee, per_kg_fee)
@@ -152,7 +157,10 @@ router.post('/', [
     // Try find existing address for seller
     let shipFromId = null;
     const [sellerAddr] = await connection.execute(
-      `SELECT address_id FROM address WHERE seller_id = ? ORDER BY is_default DESC, address_id ASC LIMIT 1`,
+      `SELECT TOP (1) address_id 
+       FROM address 
+       WHERE seller_id = ? 
+       ORDER BY is_default DESC, address_id ASC`,
       [firstSellerId]
     );
     if (sellerAddr.length > 0) {

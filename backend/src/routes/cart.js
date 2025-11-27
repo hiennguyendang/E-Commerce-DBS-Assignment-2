@@ -14,7 +14,10 @@ const ensureBuyerExists = async (connection, userId) => {
 
 const getOrCreateActiveCart = async (connection, buyerId) => {
   const [c] = await connection.execute(
-    `SELECT cart_id FROM cart WHERE buyer_id = ? AND status = 'Active' ORDER BY created_at DESC LIMIT 1`,
+    `SELECT TOP (1) cart_id 
+     FROM cart 
+     WHERE buyer_id = ? AND status = 'Active' 
+     ORDER BY created_at DESC`,
     [buyerId]
   );
   if (c.length > 0) return c[0].cart_id;
@@ -44,7 +47,7 @@ router.get('/', authenticateToken, async (req, res) => {
          ci.variant_code,
          ci.qty AS quantity,
          p.title AS name,
-         COALESCE((SELECT url FROM product_image img WHERE img.product_id = p.product_id ORDER BY image_id ASC LIMIT 1), '') AS image,
+         COALESCE((SELECT TOP (1) url FROM product_image img WHERE img.product_id = p.product_id ORDER BY image_id ASC), '') AS image,
          v.list_price AS price
        FROM cart_item ci
        JOIN cart c ON c.cart_id = ci.cart_id AND c.status = 'Active'
@@ -105,9 +108,10 @@ router.post('/items', [
     if (!variantCode) {
       // pick an active variant with stock, lowest price
       const [vPick] = await connection.execute(
-        `SELECT variant_code, list_price, stock_qty FROM product_variant 
+        `SELECT TOP (1) variant_code, list_price, stock_qty 
+         FROM product_variant 
          WHERE product_id = ? AND is_active = 1 AND stock_qty > 0 
-         ORDER BY list_price ASC LIMIT 1`,
+         ORDER BY list_price ASC`,
         [product_id]
       );
       if (vPick.length === 0) {
@@ -257,12 +261,19 @@ router.delete('/items/:id', authenticateToken, async (req, res) => {
 
 // Clear entire cart
 router.delete('/', authenticateToken, async (req, res) => {
+  const connection = await pool.getConnection();
   try {
-    await pool.execute('DELETE FROM cart_items WHERE user_id = ?', [req.user.id]);
+    await ensureBuyerExists(connection, req.user.id);
+    const cartId = await getOrCreateActiveCart(connection, req.user.id);
+
+    await connection.execute('DELETE FROM cart_item WHERE cart_id = ?', [cartId]);
+
     res.json({ message: 'Cart cleared successfully' });
   } catch (error) {
     console.error('Error clearing cart:', error);
     res.status(500).json({ error: 'Failed to clear cart' });
+  } finally {
+    connection.release();
   }
 });
 

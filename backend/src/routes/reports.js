@@ -18,15 +18,11 @@ router.get('/seller/stats', authenticateToken, requireSellerOrAdmin, async (req,
 
     const sellerId = sellers[0].seller_id;
 
-    // Call stored procedure sp_get_seller_stats
-    const [rows] = await pool.query('CALL sp_get_seller_stats(?)', [sellerId]);
+    // Call stored procedure sp_get_seller_stats (SQL Server)
+    const [rows] = await pool.execute('EXEC dbo.sp_get_seller_stats ?', [sellerId]);
 
-    // mysql2: first element is an array of rows
-    const statsRows = Array.isArray(rows) ? rows[0] : null;
-    const stats =
-      Array.isArray(statsRows) && statsRows.length > 0
-        ? statsRows[0]
-        : { products: 0, orders: 0, revenue: 0 };
+    const statsRow = Array.isArray(rows) && rows.length > 0 ? rows[0] : null;
+    const stats = statsRow || { products: 0, orders: 0, revenue: 0 };
 
     res.json({
       products: Number(stats.products || 0),

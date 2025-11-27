@@ -1,222 +1,269 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import axiosInstance from "../utils/axiosConfig";
 import Button from "../components/common/Button";
 import Modal from "../components/common/Modal";
 import Spinner from "../components/common/Spinner";
 
+const EMPTY_FORM = {
+  title: "",
+  description: "",
+  category_ids: [],
+  variants: [{ name: "Mặc định", price: 0, stock: 0 }],
+  imagesText: "",
+};
+
+const formatCurrency = (value) =>
+  Number(value || 0).toLocaleString("vi-VN") + "đ";
+
+const mapOrderStatus = (status) => {
+  const map = {
+    Pending: "Đang xử lý",
+    Paid: "Đã thanh toán",
+    Packing: "Đang đóng gói",
+    Shipped: "Đã gửi hàng",
+    Completed: "Hoàn thành",
+    Cancelled: "Đã hủy",
+    Refunded: "Hoàn tiền",
+  };
+  return map[status] || status;
+};
+
 export default function SellerDashboardPage() {
   const [products, setProducts] = useState([]);
   const [stats, setStats] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
-  const [editingProduct, setEditingProduct] = useState(null);
+  const [orders, setOrders] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState(null);
 
-  // Form state
-  const [formData, setFormData] = useState({
-    product_name: "",
-    description: "",
-    category_ids: [],
-    variants: [{ variant_name: "DEFAULT", price: 0, stock_quantity: 0 }],
-    images: []
-  });
+  const [showModal, setShowModal] = useState(false);
+  const [editingProduct, setEditingProduct] = useState(null);
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    console.log('🔍 SellerDashboard mounted');
-    fetchData();
-    fetchCategories();
+    loadDashboard();
   }, []);
 
-  const fetchData = async () => {
+  const loadDashboard = async () => {
     try {
-      console.log('📡 Fetching seller data...');
       setLoading(true);
-      const [productsRes, statsRes] = await Promise.all([
+      const [productRes, statsRes, ordersRes, categoryRes] = await Promise.all([
         axiosInstance.get("/seller/products"),
-        axiosInstance.get("/reports/seller/stats")
+        axiosInstance.get("/reports/seller/stats"),
+        axiosInstance.get("/seller/orders"),
+        axiosInstance.get("/categories"),
       ]);
-      console.log('✅ Products:', productsRes.data);
-      console.log('✅ Stats:', statsRes.data);
-      setProducts(productsRes.data);
-      setStats(statsRes.data);
+
+      setProducts(Array.isArray(productRes.data) ? productRes.data : []);
+      setStats(statsRes.data || null);
+      setOrders(Array.isArray(ordersRes.data) ? ordersRes.data : []);
+      setCategories(Array.isArray(categoryRes.data) ? categoryRes.data : []);
     } catch (err) {
-      console.error("❌ Lỗi tải dữ liệu:", err);
-      setMessage({ text: "Không thể tải dữ liệu seller", type: "error" });
+      // eslint-disable-next-line no-console
+      console.error("Lỗi tải dữ liệu seller:", err);
+      setMessage({
+        type: "error",
+        text: "Không thể tải dữ liệu seller. Vui lòng thử lại.",
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchCategories = async () => {
-    try {
-      const res = await axiosInstance.get("/categories");
-      setCategories(res.data);
-    } catch (err) {
-      console.error("Lỗi tải categories:", err);
-    }
-  };
-
-  const handleOpenModal = (product = null) => {
-    if (product) {
-      setEditingProduct(product);
-      setFormData({
-        product_name: product.product_name,
-        description: product.description || "",
-        category_ids: [],
-        variants: product.variants || [{ variant_name: "DEFAULT", price: product.min_price || 0, stock_quantity: product.total_stock || 0 }],
-        images: []
-      });
-    } else {
-      setEditingProduct(null);
-      setFormData({
-        product_name: "",
-        description: "",
-        category_ids: [],
-        variants: [{ variant_name: "DEFAULT", price: 0, stock_quantity: 0 }],
-        images: []
-      });
-    }
+  const openCreateModal = () => {
+    setEditingProduct(null);
+    setForm(EMPTY_FORM);
     setShowModal(true);
   };
 
-  const handleCloseModal = () => {
+  const openEditModal = (product) => {
+    setEditingProduct(product);
+    setForm({
+      title: product.product_name || product.title || "",
+      description: product.description || "",
+      category_ids: [],
+      variants: [{ name: "Mặc định", price: product.min_price || 0, stock: product.total_stock || 0 }],
+      imagesText: "",
+    });
+    setShowModal(true);
+  };
+
+  const closeModal = () => {
     setShowModal(false);
     setEditingProduct(null);
+    setForm(EMPTY_FORM);
+  };
+
+  const handleVariantChange = (index, field, value) => {
+    const list = [...form.variants];
+    list[index] = { ...list[index], [field]: value };
+    setForm({ ...form, variants: list });
+  };
+
+  const addVariant = () => {
+    setForm({
+      ...form,
+      variants: [...form.variants, { name: "", price: 0, stock: 0 }],
+    });
+  };
+
+  const removeVariant = (index) => {
+    if (form.variants.length === 1) return;
+    setForm({
+      ...form,
+      variants: form.variants.filter((_, i) => i !== index),
+    });
+  };
+
+  const handleToggleStatus = async (product) => {
+    try {
+      const nextActive = !(product.status === "Active");
+      await axiosInstance.put(`/seller/products/${product.product_id}`, {
+        product_name: product.product_name || product.title,
+        description: product.description,
+        is_active: nextActive,
+      });
+      setMessage({
+        type: "success",
+        text: nextActive ? "Đã hiển thị sản phẩm." : "Đã ẩn sản phẩm.",
+      });
+      await loadDashboard();
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error("Lỗi cập nhật trạng thái sản phẩm:", err);
+      setMessage({
+        type: "error",
+        text: "Không thể cập nhật trạng thái sản phẩm.",
+      });
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+    setSaving(true);
+
     try {
       if (editingProduct) {
-        // Update product
         await axiosInstance.put(`/seller/products/${editingProduct.product_id}`, {
-          product_name: formData.product_name,
-          description: formData.description
+          product_name: form.title,
+          description: form.description,
         });
-        setMessage({ text: "Cập nhật sản phẩm thành công!", type: "success" });
+        setMessage({
+          type: "success",
+          text: "Cập nhật sản phẩm thành công.",
+        });
       } else {
-        // Create product
-        await axiosInstance.post("/seller/products", formData);
-        setMessage({ text: "Tạo sản phẩm thành công!", type: "success" });
+        const variantPayload = form.variants.map((v, index) => ({
+          variant_code: `VAR${String(index + 1).padStart(3, "0")}`,
+          list_price: Number(v.price) || 0,
+          stock_qty: Number(v.stock) || 0,
+        }));
+
+        const images =
+          form.imagesText
+            .split("\n")
+            .map((u) => u.trim())
+            .filter(Boolean) || [];
+
+        await axiosInstance.post("/seller/products", {
+          title: form.title,
+          description: form.description,
+          category_ids: form.category_ids,
+          variants: variantPayload,
+          images,
+        });
+        setMessage({
+          type: "success",
+          text: "Tạo sản phẩm mới thành công.",
+        });
       }
-      
-      handleCloseModal();
-      fetchData();
+
+      closeModal();
+      await loadDashboard();
     } catch (err) {
+      // eslint-disable-next-line no-console
       console.error("Lỗi lưu sản phẩm:", err);
-      setMessage({ text: err.response?.data?.error || "Không thể lưu sản phẩm", type: "error" });
+      const msg =
+        err.response?.data?.error ||
+        err.response?.data?.message ||
+        "Không thể lưu sản phẩm.";
+      setMessage({ type: "error", text: msg });
+    } finally {
+      setSaving(false);
     }
   };
 
-  const handleDelete = async (productId) => {
-    if (!window.confirm("Bạn có chắc muốn xóa sản phẩm này?")) return;
+  if (loading) {
+    return <Spinner message="Đang tải dữ liệu seller..." />;
+  }
 
-    try {
-      await axiosInstance.delete(`/seller/products/${productId}`);
-      setMessage({ text: "Xóa sản phẩm thành công!", type: "success" });
-      fetchData();
-    } catch (err) {
-      console.error("Lỗi xóa sản phẩm:", err);
-      setMessage({ text: "Không thể xóa sản phẩm", type: "error" });
-    }
-  };
-
-  const handleToggleActive = async (product) => {
-    try {
-      await axiosInstance.put(`/seller/products/${product.product_id}`, {
-        is_active: !product.is_active
-      });
-      setMessage({ text: product.is_active ? "Đã ẩn sản phẩm" : "Đã hiển thị sản phẩm", type: "success" });
-      fetchData();
-    } catch (err) {
-      console.error("Lỗi cập nhật trạng thái:", err);
-      setMessage({ text: "Không thể cập nhật trạng thái", type: "error" });
-    }
-  };
-
-  const addVariant = () => {
-    setFormData({
-      ...formData,
-      variants: [...formData.variants, { variant_name: "", price: 0, stock_quantity: 0 }]
-    });
-  };
-
-  const updateVariant = (index, field, value) => {
-    const newVariants = [...formData.variants];
-    newVariants[index][field] = value;
-    setFormData({ ...formData, variants: newVariants });
-  };
-
-  const removeVariant = (index) => {
-    if (formData.variants.length === 1) {
-      setMessage({ text: "Phải có ít nhất 1 biến thể!", type: "error" });
-      return;
-    }
-    const newVariants = formData.variants.filter((_, i) => i !== index);
-    setFormData({ ...formData, variants: newVariants });
-  };
-
-  if (loading) return <Spinner message="Đang tải dữ liệu seller..." />;
+  const safeStats = stats || { products: 0, orders: 0, revenue: 0 };
 
   return (
     <div className="container py-4">
-      {/* Message notification */}
       {message && (
-        <div className={`alert alert-${message.type === 'success' ? 'success' : 'danger'} alert-dismissible fade show`} role="alert">
+        <div
+          className={`alert alert-${
+            message.type === "success" ? "success" : "danger"
+          } alert-dismissible fade show`}
+          role="alert"
+        >
           {message.text}
-          <button type="button" className="btn-close" onClick={() => setMessage(null)}></button>
+          <button
+            type="button"
+            className="btn-close"
+            onClick={() => setMessage(null)}
+          />
         </div>
       )}
 
-      {/* Stats Cards */}
-      {stats && (
-        <div className="row g-3 mb-4">
-          <div className="col-md-3">
-            <div className="card bg-primary text-white">
-              <div className="card-body text-center">
-                <h5>📦 Sản phẩm</h5>
-                <h2>{stats.products}</h2>
-              </div>
-            </div>
-          </div>
-          <div className="col-md-3">
-            <div className="card bg-success text-white">
-              <div className="card-body text-center">
-                <h5>🛍️ Đơn hàng</h5>
-                <h2>{stats.orders}</h2>
-              </div>
-            </div>
-          </div>
-          <div className="col-md-3">
-            <div className="card bg-warning text-white">
-              <div className="card-body text-center">
-                <h5>💰 Doanh thu</h5>
-                <h2>{(stats.revenue || 0).toLocaleString("vi-VN")}đ</h2>
-              </div>
-            </div>
-          </div>
-          <div className="col-md-3">
-            <div className="card bg-info text-white">
-              <div className="card-body text-center">
-                <h5>⭐ Đánh giá</h5>
-                <h2>4.5</h2>
-              </div>
+      {/* Stats */}
+      <div className="row g-3 mb-4">
+        <div className="col-md-3">
+          <div className="card bg-primary text-white h-100">
+            <div className="card-body text-center">
+              <h5>Sản phẩm</h5>
+              <h2>{safeStats.products}</h2>
             </div>
           </div>
         </div>
-      )}
-
-      {/* Product Management */}
-      <div className="d-flex justify-content-between align-items-center mb-3">
-        <h4 className="fw-bold mb-0">
-          <i className="bi bi-shop me-2"></i> Quản lý sản phẩm
-        </h4>
-        <Button label="➕ Thêm sản phẩm mới" onClick={() => handleOpenModal()} />
+        <div className="col-md-3">
+          <div className="card bg-success text-white h-100">
+            <div className="card-body text-center">
+              <h5>Đơn hàng</h5>
+              <h2>{safeStats.orders}</h2>
+            </div>
+          </div>
+        </div>
+        <div className="col-md-3">
+          <div className="card bg-warning text-white h-100">
+            <div className="card-body text-center">
+              <h5>Doanh thu</h5>
+              <h2>{formatCurrency(safeStats.revenue)}</h2>
+            </div>
+          </div>
+        </div>
+        <div className="col-md-3">
+          <div className="card bg-info text-white h-100">
+            <div className="card-body text-center">
+              <h5>Đánh giá</h5>
+              <h2>4.5</h2>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div className="table-responsive bg-white rounded shadow-sm">
+      {/* Product management */}
+      <div className="d-flex justify-content-between align-items-center mb-3">
+        <h4 className="fw-bold mb-0">
+          <i className="bi bi-shop me-2" />
+          Quản lý sản phẩm
+        </h4>
+        <Button label="+ Thêm sản phẩm mới" onClick={openCreateModal} />
+      </div>
+
+      <div className="table-responsive bg-white rounded shadow-sm mb-4">
         <table className="table table-hover mb-0">
           <thead className="table-light">
             <tr>
@@ -232,7 +279,7 @@ export default function SellerDashboardPage() {
           <tbody>
             {products.length === 0 ? (
               <tr>
-                <td colSpan="7" className="text-center py-5 text-muted">
+                <td colSpan="7" className="text-center py-4 text-muted">
                   Chưa có sản phẩm nào. Hãy thêm sản phẩm đầu tiên!
                 </td>
               </tr>
@@ -240,49 +287,73 @@ export default function SellerDashboardPage() {
               products.map((p) => (
                 <tr key={p.product_id}>
                   <td>
-                    <img 
-                      src={p.image_url || "https://via.placeholder.com/80"} 
-                      alt={p.product_name}
-                      style={{ width: "80px", height: "80px", objectFit: "cover" }}
+                    <img
+                      src={
+                        p.image_url || "https://via.placeholder.com/80?text=No+Image"
+                      }
+                      alt={p.product_name || p.title}
+                      style={{
+                        width: "80px",
+                        height: "80px",
+                        objectFit: "cover",
+                      }}
                       className="rounded"
                     />
                   </td>
                   <td>
-                    <strong>{p.product_name}</strong>
-                    <br />
-                    <small className="text-muted">{p.description?.substring(0, 50)}...</small>
+                    <strong>{p.product_name || p.title}</strong>
+                    {p.description && (
+                      <>
+                        <br />
+                        <small className="text-muted">
+                          {p.description.substring(0, 60)}
+                          {p.description.length > 60 ? "..." : ""}
+                        </small>
+                      </>
+                    )}
                   </td>
                   <td>
-                    {p.min_price === p.max_price 
-                      ? `${(p.min_price || 0).toLocaleString("vi-VN")}đ`
-                      : `${(p.min_price || 0).toLocaleString("vi-VN")}đ - ${(p.max_price || 0).toLocaleString("vi-VN")}đ`
-                    }
+                    {p.min_price === p.max_price
+                      ? formatCurrency(p.min_price)
+                      : `${formatCurrency(p.min_price)} - ${formatCurrency(
+                          p.max_price
+                        )}`}
                   </td>
                   <td>{p.total_stock || 0}</td>
                   <td>
-                    <span className="badge bg-secondary">{p.variant_count} biến thể</span>
+                    <span className="badge bg-secondary">
+                      {p.variant_count || 0} biến thể
+                    </span>
                   </td>
                   <td>
-                    <button
-                      className={`btn btn-sm ${p.is_active ? "btn-success" : "btn-secondary"}`}
-                      onClick={() => handleToggleActive(p)}
+                    <span
+                      className={`badge ${
+                        p.status === "Active"
+                          ? "bg-success"
+                          : p.status === "Hidden"
+                          ? "bg-secondary"
+                          : "bg-danger"
+                      }`}
                     >
-                      {p.is_active ? "Hiển thị" : "Ẩn"}
-                    </button>
+                      {p.status}
+                    </span>
                   </td>
                   <td>
                     <button
+                      type="button"
+                      className="btn btn-sm btn-outline-secondary me-1"
+                      onClick={() => handleToggleStatus(p)}
+                    >
+                      {p.status === "Active" ? "Ẩn" : "Hiển thị"}
+                    </button>
+                    <button
+                      type="button"
                       className="btn btn-sm btn-primary me-1"
-                      onClick={() => handleOpenModal(p)}
+                      onClick={() => openEditModal(p)}
                     >
-                      <i className="bi bi-pencil"></i>
+                      <i className="bi bi-pencil" />
                     </button>
-                    <button
-                      className="btn btn-sm btn-danger"
-                      onClick={() => handleDelete(p.product_id)}
-                    >
-                      <i className="bi bi-trash"></i>
-                    </button>
+                    {/* Có thể thêm nút xóa cứng nếu cần trong tương lai */}
                   </td>
                 </tr>
               ))
@@ -291,16 +362,71 @@ export default function SellerDashboardPage() {
         </table>
       </div>
 
-      {/* Modal thêm/sửa sản phẩm */}
-      <Modal show={showModal} onClose={handleCloseModal} title={editingProduct ? "Sửa sản phẩm" : "Thêm sản phẩm mới"} hideFooter={true}>
+      {/* Order history */}
+      <div className="mt-4">
+        <h4 className="fw-bold mb-3">
+          <i className="bi bi-receipt-cutoff me-2" />
+          Lịch sử đơn hàng của shop
+        </h4>
+        <div className="table-responsive bg-white rounded shadow-sm">
+          <table className="table table-hover mb-0">
+            <thead className="table-light">
+              <tr>
+                <th>Mã đơn</th>
+                <th>Khách hàng</th>
+                <th>Email</th>
+                <th>Số sản phẩm</th>
+                <th>Tổng tiền</th>
+                <th>Trạng thái</th>
+                <th>Ngày tạo</th>
+              </tr>
+            </thead>
+            <tbody>
+              {orders.length === 0 ? (
+                <tr>
+                  <td colSpan="7" className="text-center py-4 text-muted">
+                    Chưa có đơn hàng nào cho shop này.
+                  </td>
+                </tr>
+              ) : (
+                orders.map((o) => (
+                  <tr key={o.order_id}>
+                    <td>{`ORD${String(o.order_id).padStart(6, "0")}`}</td>
+                    <td>{o.customer_name}</td>
+                    <td>{o.customer_email}</td>
+                    <td>{o.item_count}</td>
+                    <td>{formatCurrency(o.total_amount)}</td>
+                    <td>{mapOrderStatus(o.order_status)}</td>
+                    <td>
+                      {o.created_at
+                        ? new Date(o.created_at).toLocaleString("vi-VN")
+                        : ""}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Modal create / edit product */}
+      <Modal
+        show={showModal}
+        onClose={closeModal}
+        title={editingProduct ? "Chỉnh sửa sản phẩm" : "Thêm sản phẩm mới"}
+        hideFooter
+      >
         <form onSubmit={handleSubmit}>
           <div className="mb-3">
             <label className="form-label">Tên sản phẩm *</label>
             <input
               type="text"
               className="form-control"
-              value={formData.product_name}
-              onChange={(e) => setFormData({ ...formData, product_name: e.target.value })}
+              value={form.title}
+              onChange={(e) =>
+                setForm({ ...form, title: e.target.value })
+              }
               required
             />
           </div>
@@ -310,119 +436,161 @@ export default function SellerDashboardPage() {
             <textarea
               className="form-control"
               rows="3"
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              value={form.description}
+              onChange={(e) =>
+                setForm({ ...form, description: e.target.value })
+              }
             />
           </div>
 
           <div className="mb-3">
             <label className="form-label">Danh mục</label>
-            <select 
+            <select
               multiple
               className="form-control"
-              value={formData.category_ids}
+              value={form.category_ids}
               onChange={(e) => {
-                const selected = Array.from(e.target.selectedOptions, option => parseInt(option.value));
-                setFormData({ ...formData, category_ids: selected });
+                const selected = Array.from(
+                  e.target.selectedOptions,
+                  (opt) => Number(opt.value)
+                );
+                setForm({ ...form, category_ids: selected });
               }}
             >
-              {categories.map(cat => (
-                <option key={cat.category_id} value={cat.category_id}>
-                  {cat.category_name}
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.name}
                 </option>
               ))}
             </select>
-            <small className="text-muted">Giữ Ctrl để chọn nhiều danh mục</small>
+            <small className="text-muted">
+              Giữ Ctrl để chọn nhiều danh mục
+            </small>
           </div>
 
           {!editingProduct && (
-            <>
-              <div className="mb-3">
-                <div className="d-flex justify-content-between align-items-center mb-2">
-                  <label className="form-label mb-0">Biến thể sản phẩm</label>
-                  <button type="button" className="btn btn-sm btn-secondary" onClick={addVariant}>
-                    + Thêm biến thể
-                  </button>
-                </div>
+            <div className="mb-3">
+              <div className="d-flex justify-content-between align-items-center mb-2">
+                <label className="form-label mb-0">
+                  Biến thể sản phẩm
+                </label>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-secondary"
+                  onClick={addVariant}
+                >
+                  + Thêm biến thể
+                </button>
+              </div>
 
-                {formData.variants.map((variant, index) => (
-                  <div key={index} className="border rounded p-2 p-md-3 mb-2 bg-light">
-                    <div className="row g-2">
-                      <div className="col-12 col-md-4">
-                        <label className="form-label small mb-1">Tên biến thể</label>
-                        <input
-                          type="text"
-                          className="form-control form-control-sm"
-                          placeholder="VD: Đỏ, Size M"
-                          value={variant.variant_name}
-                          onChange={(e) => updateVariant(index, 'variant_name', e.target.value)}
-                        />
-                      </div>
-                      <div className="col-6 col-md-3">
-                        <label className="form-label small mb-1">Giá (VNĐ) *</label>
-                        <input
-                          type="number"
-                          className="form-control form-control-sm"
-                          placeholder="199000"
-                          value={variant.price}
-                          onChange={(e) => updateVariant(index, 'price', parseFloat(e.target.value))}
-                          required
-                          min="0"
-                        />
-                      </div>
-                      <div className="col-6 col-md-3">
-                        <label className="form-label small mb-1">Số lượng *</label>
-                        <input
-                          type="number"
-                          className="form-control form-control-sm"
-                          placeholder="100"
-                          value={variant.stock_quantity}
-                          onChange={(e) => updateVariant(index, 'stock_quantity', parseInt(e.target.value))}
-                          required
-                          min="0"
-                        />
-                      </div>
-                      <div className="col-12 col-md-2 d-flex align-items-end">
-                        <button
-                          type="button"
-                          className="btn btn-danger btn-sm w-100"
-                          onClick={() => removeVariant(index)}
-                          disabled={formData.variants.length === 1}
-                        >
-                          <i className="bi bi-trash"></i>
-                        </button>
-                      </div>
+              {form.variants.map((v, index) => (
+                <div
+                  key={index}
+                  className="border rounded p-2 p-md-3 mb-2 bg-light"
+                >
+                  <div className="row g-2">
+                    <div className="col-12 col-md-4">
+                      <label className="form-label small mb-1">
+                        Tên biến thể
+                      </label>
+                      <input
+                        type="text"
+                        className="form-control form-control-sm"
+                        placeholder="Ví dụ: Màu đen, Size M"
+                        value={v.name}
+                        onChange={(e) =>
+                          handleVariantChange(
+                            index,
+                            "name",
+                            e.target.value
+                          )
+                        }
+                      />
+                    </div>
+                    <div className="col-6 col-md-3">
+                      <label className="form-label small mb-1">
+                        Giá (VNĐ) *
+                      </label>
+                      <input
+                        type="number"
+                        className="form-control form-control-sm"
+                        value={v.price}
+                        min="0"
+                        required
+                        onChange={(e) =>
+                          handleVariantChange(
+                            index,
+                            "price",
+                            e.target.value
+                          )
+                        }
+                      />
+                    </div>
+                    <div className="col-6 col-md-3">
+                      <label className="form-label small mb-1">
+                        Số lượng *
+                      </label>
+                      <input
+                        type="number"
+                        className="form-control form-control-sm"
+                        value={v.stock}
+                        min="0"
+                        required
+                        onChange={(e) =>
+                          handleVariantChange(
+                            index,
+                            "stock",
+                            e.target.value
+                          )
+                        }
+                      />
+                    </div>
+                    <div className="col-12 col-md-2 d-flex align-items-end">
+                      <button
+                        type="button"
+                        className="btn btn-danger btn-sm w-100"
+                        disabled={form.variants.length === 1}
+                        onClick={() => removeVariant(index)}
+                      >
+                        <i className="bi bi-trash" />
+                      </button>
                     </div>
                   </div>
-                ))}
-              </div>
+                </div>
+              ))}
+            </div>
+          )}
 
-              <div className="mb-3">
-                <label className="form-label">URL hình ảnh (mỗi URL một dòng)</label>
-                <textarea
-                  className="form-control"
-                  rows="3"
-                  placeholder="https://example.com/image1.jpg&#10;https://example.com/image2.jpg"
-                  onChange={(e) => {
-                    const urls = e.target.value.split('\n').filter(url => url.trim());
-                    setFormData({ 
-                      ...formData, 
-                      images: urls.map(url => ({ image_url: url.trim() }))
-                    });
-                  }}
-                />
-                <small className="text-muted">Nhập mỗi URL trên một dòng</small>
-              </div>
-            </>
+          {!editingProduct && (
+            <div className="mb-3">
+              <label className="form-label">
+                URL hình ảnh (mỗi URL một dòng)
+              </label>
+              <textarea
+                className="form-control"
+                rows="3"
+                placeholder="https://example.com/image1.jpg&#10;https://example.com/image2.jpg"
+                value={form.imagesText}
+                onChange={(e) =>
+                  setForm({ ...form, imagesText: e.target.value })
+                }
+              />
+            </div>
           )}
 
           <div className="d-flex flex-column flex-sm-row gap-2 mt-3 pt-3 border-top">
-            <button type="submit" className="btn btn-primary flex-fill">
-              <i className="bi bi-check-circle me-1"></i>
-              {editingProduct ? "Cập nhật" : "Tạo sản phẩm"}
+            <button
+              type="submit"
+              className="btn btn-primary flex-fill"
+              disabled={saving}
+            >
+              {saving ? "Đang lưu..." : editingProduct ? "Cập nhật" : "Tạo sản phẩm"}
             </button>
-            <button type="button" className="btn btn-secondary flex-fill flex-sm-grow-0" onClick={handleCloseModal}>
-              <i className="bi bi-x-circle me-1"></i>
+            <button
+              type="button"
+              className="btn btn-secondary flex-fill flex-sm-grow-0"
+              onClick={closeModal}
+            >
               Hủy
             </button>
           </div>
