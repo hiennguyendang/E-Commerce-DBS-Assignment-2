@@ -9,11 +9,10 @@ export default function LoginPage({ onLogin }) {
       <header className="login-header py-3">
         <div className="container d-flex align-items-center justify-content-center gap-2">
           <img
-            src={require("../assets/imgs/shopee-white.png")}
-            alt="Shopee Logo"
-            style={{ height: "36px", width: "auto" }}
+            src="/shopzada-logo.svg"
+            alt="Shopzada Logo"
+            style={{ height: "50px", width: "auto", background: 'white', borderRadius: '8px', padding: '4px 12px' }}
           />
-          <h3 className="m-0 text-white fw-bold">Shopee Clone</h3>
         </div>
       </header>
 
@@ -34,7 +33,7 @@ export default function LoginPage({ onLogin }) {
 
       {/* ===== Footer ===== */}
       <footer className="login-footer text-center py-3 text-white">
-        © 2025 Shopee Clone - Nhóm 09 | Đại học Bách Khoa TP.HCM
+        © 2025 Shopzada - Mua sắm trực tuyến
       </footer>
     </div>
   );

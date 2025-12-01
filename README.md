@@ -1,4 +1,4 @@
-# Shopeelike E‑Commerce Platform
+# Shopzada E‑Commerce Platform
 
 Full‑stack mini e‑commerce project for CO2013 – Database Systems Assignment 2.
 

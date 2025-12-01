@@ -28,8 +28,7 @@ export default function Header({ user, onLogout  }) {
           {/* Cột trái: logo + tiêu đề */}
           <div className="left-rail">
             <Link to="/app" className="d-flex align-items-center text-white text-decoration-none">
-              <img src="/shopee-white.png" alt="logo" className="bk-logo me-2" />
-              <span className="bk-title">Shopee Clone</span>
+              <img src="/shopzada-logo.svg" alt="Shopzada" style={{ height: '40px', background: 'white', borderRadius: '8px', padding: '2px 8px' }} />
             </Link>
           </div>
 

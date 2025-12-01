@@ -3,6 +3,7 @@ import axiosInstance from "../utils/axiosConfig";
 import ProductList from "../components/product/ProductList";
 import ProductFilter from "../components/product/ProductFilter";
 import Spinner from "../components/common/Spinner";
+import HeroSection from "../components/layout/HeroSection";
 
 export default function HomePage({ onAddToCart }) {
   const [products, setProducts] = useState([]);
@@ -10,6 +11,7 @@ export default function HomePage({ onAddToCart }) {
   const [featured, setFeatured] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState({ category: "", maxPrice: "" });
 
   const normalizeProducts = (list) =>
     list.map((p) => ({
@@ -19,6 +21,7 @@ export default function HomePage({ onAddToCart }) {
       image: p.primary_image || p.image || "",
       rating: p.rating_average || 0,
       reviews: p.rating_count || 0,
+      category_id: p.category_id // Ensure we have category_id for filtering
     }));
 
   useEffect(() => {
@@ -54,41 +57,36 @@ export default function HomePage({ onAddToCart }) {
     fetchData();
   }, []);
 
-  const handleFilter = async (type, value) => {
-    if (type === "category") {
-      if (!value) {
-        setFiltered(products);
+  useEffect(() => {
+    const applyFilters = async () => {
+      if (!filters.category && !filters.maxPrice) {
+        if (products.length > 0) setFiltered(products);
         return;
       }
 
       try {
-        const cat = categories.find((c) => c.name === value);
-        if (!cat) {
-          setFiltered(products);
-          return;
+        const params = {};
+        if (filters.category) {
+          const cat = categories.find((c) => c.name === filters.category);
+          if (cat) params.category = cat.id;
         }
+        if (filters.maxPrice) params.maxPrice = filters.maxPrice;
 
-        const res = await axiosInstance.get("/products", {
-          params: { category: cat.id },
-        });
-
+        const res = await axiosInstance.get("/products", { params });
         const list = res.data?.products || [];
         setFiltered(normalizeProducts(list));
       } catch (err) {
-        console.error("Lọc theo danh mục lỗi:", err);
-        setFiltered(products);
+        console.error("Filter error:", err);
       }
-      return;
-    }
+    };
 
-    if (type === "maxPrice") {
-      const max = Number(value || 0);
-      if (!max) {
-        setFiltered(products);
-        return;
-      }
-      setFiltered(products.filter((p) => p.price <= max));
+    if (products.length > 0) {
+      applyFilters();
     }
+  }, [filters, categories, products]);
+
+  const handleFilter = (type, value) => {
+    setFilters((prev) => ({ ...prev, [type]: value }));
   };
 
   if (loading) {
@@ -96,49 +94,25 @@ export default function HomePage({ onAddToCart }) {
   }
 
   return (
-    <div className="row g-4">
-      <div className="col-lg-3">
-        <ProductFilter categories={categories} onFilter={handleFilter} />
-      </div>
-      <div className="col-lg-9">
-        {categories.length > 0 && (
-          <div className="mb-4">
-            <div className="row g-3">
-              {categories.slice(0, 3).map((cat) => (
-                <div key={cat.id} className="col-md-4">
-                  <div className="card h-100 border-0 shadow-sm">
-                    <div className="card-body">
-                      <h6 className="fw-bold mb-1">{cat.name}</h6>
-                      <p className="small text-muted mb-2">
-                        {cat.description ||
-                          "Khám phá các sản phẩm nổi bật trong danh mục này."}
-                      </p>
-                      <button
-                        type="button"
-                        className="btn btn-sm btn-bk"
-                        onClick={() => handleFilter("category", cat.name)}
-                      >
-                        Xem ngay
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
+    <>
+      <HeroSection />
+      <div className="row g-4">
+        <div className="col-lg-3">
+          <ProductFilter categories={categories} onFilter={handleFilter} />
+        </div>
+        <div className="col-lg-9">
+          {featured.length > 0 && (
+            <div className="mb-4">
+              <h5 className="fw-bold mb-3">Gợi ý hôm nay cho bạn</h5>
+              <ProductList products={featured} onAddToCart={onAddToCart} />
             </div>
-          </div>
-        )}
+          )}
 
-        {featured.length > 0 && (
-          <div className="mb-4">
-            <h5 className="fw-bold mb-3">Gợi ý hôm nay cho bạn</h5>
-            <ProductList products={featured} onAddToCart={onAddToCart} />
-          </div>
-        )}
-
-        <h5 className="fw-bold mb-3">Tất cả sản phẩm</h5>
-        <ProductList products={filtered} onAddToCart={onAddToCart} />
+          <h5 className="fw-bold mb-3">Tất cả sản phẩm</h5>
+          <ProductList products={filtered} onAddToCart={onAddToCart} />
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 

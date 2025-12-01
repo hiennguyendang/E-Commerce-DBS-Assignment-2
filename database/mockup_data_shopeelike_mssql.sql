@@ -5,6 +5,7 @@ USE shopeelike;
 GO
 
 SET NOCOUNT ON;
+SET QUOTED_IDENTIFIER ON;
 
 -- 1. Shipping services
 IF NOT EXISTS (SELECT 1 FROM dbo.shipping_service WHERE carrier = 'DefaultCarrier')
@@ -300,13 +301,74 @@ BEGIN
         1
     FROM dbo.product;
 
-    -- Insert images for all products
+    -- Insert images using pattern-based mapping (checked 200 OK); diverse fallbacks
+    DECLARE @imgMapping TABLE(pattern NVARCHAR(200), url NVARCHAR(255), priority INT);
+    INSERT INTO @imgMapping (pattern, url, priority)
+    VALUES
+      (N'%iPhone%',                       'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=600', 1),
+      (N'%Galaxy%',                       'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=600', 1),
+      (N'%Phone%',                        'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=600', 2),
+      (N'%MacBook%',                      'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=600', 1),
+      (N'%Laptop%',                       'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=600', 2),
+      (N'%iPad%',                         'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=600', 1),
+      (N'%Tablet%',                       'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=600', 2),
+      (N'%Headphone%',                    'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600', 1),
+      (N'%Earbuds%',                      'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600', 2),
+      (N'%AirPods%',                      'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600', 2),
+      (N'%Watch%',                        'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=600', 2),
+      (N'%Camera%',                       'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=600', 1),
+      (N'%Canon%',                        'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=600', 1),
+      (N'%Sony A%',                       'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=600', 1),
+      (N'%GoPro%',                        'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=600', 1),
+      (N'%DJI%',                          'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=600', 1),
+      (N'%PS5%',                          'https://images.unsplash.com/photo-1511389026070-a14ae610a1be?w=600', 1),
+      (N'%Xbox%',                         'https://images.unsplash.com/photo-1511389026070-a14ae610a1be?w=600', 1),
+      (N'%Nintendo%',                     'https://images.unsplash.com/photo-1511389026070-a14ae610a1be?w=600', 1),
+      (N'%TV%',                           'https://images.unsplash.com/photo-1503602642458-232111445657?w=600', 1),
+      (N'%Speaker%',                      'https://images.unsplash.com/photo-1503602642458-232111445657?w=600', 2),
+      (N'%Mouse%',                        'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=600', 2),
+      (N'%Backpack%',                     'https://images.unsplash.com/photo-1489515217757-5fd1be406fef?w=600', 1),
+      (N'%Bag%',                          'https://images.unsplash.com/photo-1489515217757-5fd1be406fef?w=600', 2),
+      (N'%T-Shirt%',                      'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=600', 1),
+      (N'%Jacket%',                       'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=600', 1),
+      (N'%Coat%',                         'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=600', 1),
+      (N'%Short%',                        'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=600', 1),
+      (N'%Shoes%',                        'https://images.unsplash.com/photo-1489515217757-5fd1be406fef?w=600', 1),
+      (N'%Sneaker%',                      'https://images.unsplash.com/photo-1489515217757-5fd1be406fef?w=600', 1),
+      (N'%Desk%',                         'https://images.unsplash.com/photo-1503602642458-232111445657?w=600', 1),
+      (N'%Chair%',                        'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=600', 1),
+      (N'%Lamp%',                         'https://images.unsplash.com/photo-1503602642458-232111445657?w=600', 1),
+      (N'%Mug%',                          'https://images.unsplash.com/photo-1495106245177-55dc6f43e83f?w=600', 1),
+      (N'%Book%',                         'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=600', 1),
+      (N'%Notebook%',                     'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=600', 2),
+      (N'%Pen%',                          'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=600', 2),
+      (N'%Yoga%',                         'https://images.unsplash.com/photo-1495106245177-55dc6f43e83f?w=600', 1),
+      (N'%Dumbbell%',                     'https://images.unsplash.com/photo-1495106245177-55dc6f43e83f?w=600', 1),
+      (N'%Resistance%',                   'https://images.unsplash.com/photo-1495106245177-55dc6f43e83f?w=600', 1),
+      (N'%Treadmill%',                    'https://images.unsplash.com/photo-1495106245177-55dc6f43e83f?w=600', 1),
+      (N'%Bike%',                         'https://images.unsplash.com/photo-1495106245177-55dc6f43e83f?w=600', 1),
+      (N'%Helmet%',                       'https://images.unsplash.com/photo-1495106245177-55dc6f43e83f?w=600', 1),
+      (N'%Tent%',                         'https://images.unsplash.com/photo-1495106245177-55dc6f43e83f?w=600', 1),
+      (N'%Sleeping Bag%',                 'https://images.unsplash.com/photo-1495106245177-55dc6f43e83f?w=600', 1),
+      (N'%Bottle%',                       'https://images.unsplash.com/photo-1495106245177-55dc6f43e83f?w=600', 1),
+      (N'%Basketball%',                   'https://images.unsplash.com/photo-1495106245177-55dc6f43e83f?w=600', 1),
+      (N'%Soccer%',                       'https://images.unsplash.com/photo-1495106245177-55dc6f43e83f?w=600', 1),
+      (N'%Badminton%',                    'https://images.unsplash.com/photo-1495106245177-55dc6f43e83f?w=600', 1),
+      (N'%Golf%',                         'https://images.unsplash.com/photo-1495106245177-55dc6f43e83f?w=600', 1),
+      (N'%Camping%',                      'https://images.unsplash.com/photo-1495106245177-55dc6f43e83f?w=600', 1);
+
     INSERT INTO dbo.product_image (product_id, url, caption)
     SELECT 
-        product_id, 
-        'https://via.placeholder.com/600x400?text=' + REPLACE(title, ' ', '+'),
-        title
-    FROM dbo.product;
+        p.product_id,
+        COALESCE(m.url, 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=600') AS url,
+        p.title
+    FROM dbo.product p
+    OUTER APPLY (
+        SELECT TOP 1 url
+        FROM @imgMapping im
+        WHERE p.title LIKE im.pattern
+        ORDER BY im.priority
+    ) m;
 END;
 GO
 
@@ -523,13 +585,23 @@ GO
 -- 12. Vouchers
 IF NOT EXISTS (SELECT 1 FROM dbo.voucher WHERE code = 'TECH50')
 BEGIN
-    INSERT INTO dbo.voucher (code, discount_type, discount_value, min_order_value, max_discount, valid_from, valid_until, usage_limit, used_count, status)
+    INSERT INTO dbo.voucher (
+        code,
+        title,
+        start_at,
+        end_at,
+        discount_type,
+        discount_value,
+        min_order_value,
+        stackable,
+        max_uses_per_buyer
+    )
     VALUES
-      ('TECH50', 'Percentage', 10.00, 1000000, 200000, DATEADD(DAY, -30, SYSDATETIME()), DATEADD(DAY, 30, SYSDATETIME()), 100, 15, 'Active'),
-      ('FASHION20', 'Percentage', 20.00, 500000, 100000, DATEADD(DAY, -20, SYSDATETIME()), DATEADD(DAY, 40, SYSDATETIME()), 200, 45, 'Active'),
-      ('FREESHIP', 'Fixed', 30000, 200000, 30000, DATEADD(DAY, -15, SYSDATETIME()), DATEADD(DAY, 45, SYSDATETIME()), 500, 120, 'Active'),
-      ('NEWYEAR2025', 'Percentage', 15.00, 800000, 300000, DATEADD(DAY, -10, SYSDATETIME()), DATEADD(DAY, 60, SYSDATETIME()), 1000, 250, 'Active'),
-      ('WELCOME100', 'Fixed', 100000, 1500000, 100000, DATEADD(DAY, -5, SYSDATETIME()), DATEADD(DAY, 90, SYSDATETIME()), 50, 8, 'Active');
+      ('TECH50',     N'Giảm 10%% đơn hàng công nghệ',  DATEADD(DAY, -30, SYSDATETIME()), DATEADD(DAY, 30, SYSDATETIME()),  N'Percent', 10.00, 1000000, 1, 100),
+      ('FASHION20',  N'Giảm 20%% ngành hàng thời trang', DATEADD(DAY, -20, SYSDATETIME()), DATEADD(DAY, 40, SYSDATETIME()), N'Percent', 20.00,  500000, 1, 200),
+      ('FREESHIP',   N'Voucher miễn phí vận chuyển 30K', DATEADD(DAY, -15, SYSDATETIME()), DATEADD(DAY, 45, SYSDATETIME()), N'Fixed',   30000,  200000, 1, 500),
+      ('NEWYEAR2025',N'Giảm 15%% mừng năm mới 2025',     DATEADD(DAY, -10, SYSDATETIME()), DATEADD(DAY, 60, SYSDATETIME()), N'Percent', 15.00,  800000, 1, 1000),
+      ('WELCOME100', N'Giảm 100K cho khách hàng mới',    DATEADD(DAY,  -5, SYSDATETIME()), DATEADD(DAY, 90, SYSDATETIME()), N'Fixed',  100000, 1500000, 1, 50);
 END;
 GO
 
@@ -599,4 +671,3 @@ IF @oid3 IS NOT NULL AND NOT EXISTS (SELECT 1 FROM dbo.shipment WHERE order_id =
 GO
 
 PRINT 'Mockup data inserted successfully for MSSQL.';
-
