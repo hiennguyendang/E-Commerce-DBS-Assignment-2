@@ -4,7 +4,6 @@ const { pool } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
 const { body, validationResult } = require('express-validator');
 
-// Helpers for new schema
 const ensureBuyerExists = async (connection, userId) => {
   const [b] = await connection.execute('SELECT 1 FROM buyer WHERE user_id = ?', [userId]);
   if (b.length === 0) {
@@ -34,7 +33,6 @@ const decodeItemId = (id) => {
   return { productId: parseInt(p, 10), variantCode: v };
 };
 
-// Get user's cart (return array of items to match frontend CartPage)
 router.get('/', authenticateToken, async (req, res) => {
   const connection = await pool.getConnection();
   try {
@@ -77,7 +75,6 @@ router.get('/', authenticateToken, async (req, res) => {
   }
 });
 
-// Add item to cart
 router.post('/items', [
   authenticateToken,
   body('product_id').isInt({ min: 1 }).withMessage('Valid product ID is required'),
@@ -94,7 +91,6 @@ router.post('/items', [
 
     const { product_id, variant_code: variantCodeInput, quantity } = req.body;
 
-    // Ensure product & variant
     const [pRows] = await connection.execute(
       `SELECT product_id, title, status FROM product WHERE product_id = ?`,
       [product_id]
@@ -106,7 +102,6 @@ router.post('/items', [
 
     let variantCode = variantCodeInput;
     if (!variantCode) {
-      // pick an active variant with stock, lowest price
       const [vPick] = await connection.execute(
         `SELECT TOP (1) variant_code, list_price, stock_qty 
          FROM product_variant 
@@ -137,7 +132,6 @@ router.post('/items', [
     await ensureBuyerExists(connection, req.user.id);
     const cartId = await getOrCreateActiveCart(connection, req.user.id);
 
-    // Upsert cart item
     const [exist] = await connection.execute(
       `SELECT qty FROM cart_item WHERE cart_id = ? AND product_id = ? AND variant_code = ?`,
       [cartId, product_id, variantCode]
@@ -178,7 +172,6 @@ router.post('/items', [
   }
 });
 
-// Update cart item quantity
 router.put('/items/:id', [
   authenticateToken,
   body('quantity').isInt({ min: 1, max: 99 }).withMessage('Quantity must be between 1 and 99')
@@ -198,7 +191,6 @@ router.put('/items/:id', [
     await ensureBuyerExists(connection, req.user.id);
     const cartId = await getOrCreateActiveCart(connection, req.user.id);
 
-    // Check stock
     const [vRows] = await connection.execute(
       `SELECT stock_qty FROM product_variant WHERE product_id = ? AND variant_code = ? AND is_active = 1`,
       [productId, variantCode]
@@ -230,7 +222,6 @@ router.put('/items/:id', [
   }
 });
 
-// Remove item from cart
 router.delete('/items/:id', authenticateToken, async (req, res) => {
   const connection = await pool.getConnection();
   try {
@@ -259,7 +250,6 @@ router.delete('/items/:id', authenticateToken, async (req, res) => {
   }
 });
 
-// Clear entire cart
 router.delete('/', authenticateToken, async (req, res) => {
   const connection = await pool.getConnection();
   try {

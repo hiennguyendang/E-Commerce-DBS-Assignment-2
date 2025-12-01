@@ -1,7 +1,6 @@
 require('dotenv').config();
 const sql = require('mssql');
 
-// SQL Server connection configuration
 const dbConfig = {
   server: process.env.DB_HOST || 'localhost',
   user: process.env.DB_USER || 'sa',
@@ -26,12 +25,10 @@ const getPool = () => {
     poolPromise = new sql.ConnectionPool(dbConfig)
       .connect()
       .then((pool) => {
-        // eslint-disable-next-line no-console
         console.log('SQL Server connected successfully');
         return pool;
       })
       .catch((err) => {
-        // eslint-disable-next-line no-console
         console.error('SQL Server connection error:', err.message);
         poolPromise = null;
         throw err;
@@ -40,7 +37,6 @@ const getPool = () => {
   return poolPromise;
 };
 
-// Replace ? placeholders with @p1, @p2, ... for mssql
 const prepareQuery = (query) => {
   const trimmed = query.trim().replace(/;$/, '');
 
@@ -102,7 +98,6 @@ const runQuery = async (rawQuery, params = [], transaction = null) => {
   ];
 };
 
-// Emulate mysql2/promise pool interface
 const pool = {
   execute: (query, params = []) => runQuery(query, params),
   query: (query, params = []) => runQuery(query, params),
@@ -132,7 +127,6 @@ const pool = {
       execute: (query, params = []) => runQuery(query, params, transaction),
       query: (query, params = []) => runQuery(query, params, transaction),
       release: () => {
-        // mssql manages pooling itself; nothing to release explicitly
       },
     };
   },
@@ -140,25 +134,17 @@ const pool = {
 
 const testConnection = async () => {
   try {
-    // Debug: Log database configuration
-    // eslint-disable-next-line no-console
     console.log('Database Config Debug:');
-    // eslint-disable-next-line no-console
     console.log('   DB_HOST:', process.env.DB_HOST || 'localhost');
-    // eslint-disable-next-line no-console
     console.log('   DB_USER:', process.env.DB_USER || 'NOT SET');
-    // eslint-disable-next-line no-console
     console.log('   DB_PASSWORD:', process.env.DB_PASSWORD ? '***' : 'NOT SET');
-    // eslint-disable-next-line no-console
     console.log('   DB_NAME:', process.env.DB_NAME || 'shopeelike');
 
     const sqlPool = await getPool();
     await sqlPool.request().query('SELECT 1 AS ok');
-    // eslint-disable-next-line no-console
     console.log('SQL Server database connected successfully');
     return true;
   } catch (error) {
-    // eslint-disable-next-line no-console
     console.error('Database connection failed:', error.message);
     return false;
   }
@@ -167,7 +153,6 @@ const testConnection = async () => {
 const initDatabase = async () => {
   const isConnected = await testConnection();
   if (!isConnected) {
-    // eslint-disable-next-line no-console
     console.error('Failed to connect to database. Please check your configuration.');
     process.exit(1);
   }

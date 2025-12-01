@@ -6,7 +6,6 @@ import CartSummary from "../components/cart/CartSummary";
 export default function CartPage() {
   const [items, setItems] = useState([]);
 
-  // Giả lập gọi API giỏ hàng
   useEffect(() => {
     async function fetchCart() {
       try {

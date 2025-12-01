@@ -1,13 +1,11 @@
 import axiosInstance from './axiosConfig';
 
-// Authentication API
 export const authAPI = {
   register: (userData) => axiosInstance.post('/auth/register', userData),
   login: (credentials) => axiosInstance.post('/auth/login', credentials),
   getProfile: () => axiosInstance.get('/auth/profile'),
 };
 
-// Products API
 export const productsAPI = {
   getAll: (params = {}) => axiosInstance.get('/products', { params }),
   getById: (id) => axiosInstance.get(`/products/${id}`),
@@ -17,12 +15,10 @@ export const productsAPI = {
   }),
 };
 
-// Categories API
 export const categoriesAPI = {
   getAll: () => axiosInstance.get('/categories'),
 };
 
-// Cart API
 export const cartAPI = {
   getCart: () => axiosInstance.get('/cart'),
   addItem: (productId, quantity = 1) => axiosInstance.post('/cart/items', { 
@@ -34,7 +30,6 @@ export const cartAPI = {
   clearCart: () => axiosInstance.delete('/cart'),
 };
 
-// Orders API
 export const ordersAPI = {
   getOrders: (params = {}) => axiosInstance.get('/orders', { params }),
   getOrderById: (id) => axiosInstance.get(`/orders/${id}`),
@@ -42,7 +37,6 @@ export const ordersAPI = {
   cancelOrder: (id) => axiosInstance.put(`/orders/${id}/cancel`),
 };
 
-// Helper functions
 export const formatPrice = (price) => {
   return new Intl.NumberFormat('vi-VN', {
     style: 'currency',
@@ -60,7 +54,6 @@ export const formatDate = (date) => {
   }).format(new Date(date));
 };
 
-// Auth helpers
 export const getAuthToken = () => localStorage.getItem('token');
 export const getUser = () => {
   const user = localStorage.getItem('user');

@@ -1,4 +1,3 @@
-// src/pages/RegisterPage.jsx
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
@@ -23,7 +22,6 @@ export default function RegisterPage() {
     setError("");
     setSuccess("");
 
-    // Validate cơ bản
     if (!form.name || !form.username || !form.password || !form.confirm) {
       setError("Vui lòng điền đầy đủ thông tin!");
       return;
@@ -34,7 +32,6 @@ export default function RegisterPage() {
       return;
     }
 
-    // Giả lập lưu user mới vào localStorage
     const newUser = {
       name: form.name,
       username: form.username,

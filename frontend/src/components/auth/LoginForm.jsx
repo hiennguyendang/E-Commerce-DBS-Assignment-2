@@ -1,4 +1,3 @@
-// src/components/auth/LoginForm.jsx
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axiosInstance from "../../utils/axiosConfig";
@@ -29,7 +28,6 @@ export default function LoginForm({ onLogin }) {
       onLogin(user);
       navigate("/app", { replace: true });
     } catch (err) {
-      // eslint-disable-next-line no-console
       console.error("Login error:", err);
       setError(err.response?.data?.error || "Đăng nhập thất bại!");
     } finally {

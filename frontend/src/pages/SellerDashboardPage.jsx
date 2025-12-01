@@ -60,7 +60,6 @@ export default function SellerDashboardPage() {
       setOrders(Array.isArray(ordersRes.data) ? ordersRes.data : []);
       setCategories(Array.isArray(categoryRes.data) ? categoryRes.data : []);
     } catch (err) {
-      // eslint-disable-next-line no-console
       console.error("Lỗi tải dữ liệu seller:", err);
       setMessage({
         type: "error",
@@ -130,7 +129,6 @@ export default function SellerDashboardPage() {
       });
       await loadDashboard();
     } catch (err) {
-      // eslint-disable-next-line no-console
       console.error("Lỗi cập nhật trạng thái sản phẩm:", err);
       setMessage({
         type: "error",
@@ -182,7 +180,6 @@ export default function SellerDashboardPage() {
       closeModal();
       await loadDashboard();
     } catch (err) {
-      // eslint-disable-next-line no-console
       console.error("Lỗi lưu sản phẩm:", err);
       const msg =
         err.response?.data?.error ||

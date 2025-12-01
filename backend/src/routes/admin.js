@@ -4,7 +4,6 @@ const { body, validationResult } = require('express-validator');
 const { pool } = require('../config/database');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
 
-// GET /api/admin/stats - system overview
 router.get('/stats', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const [userCount] = await pool.execute(
@@ -44,13 +43,11 @@ router.get('/stats', authenticateToken, requireAdmin, async (req, res) => {
       ordersByStatus,
     });
   } catch (error) {
-    // eslint-disable-next-line no-console
     console.error('Get admin stats error:', error);
     res.status(500).json({ error: 'Failed to get statistics' });
   }
 });
 
-// GET /api/admin/users - list users with simple search + pagination
 router.get('/users', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const page = parseInt(req.query.page || '1', 10);
@@ -135,13 +132,11 @@ router.get('/users', authenticateToken, requireAdmin, async (req, res) => {
       totalPages: Math.ceil(total / limit),
     });
   } catch (error) {
-    // eslint-disable-next-line no-console
     console.error('Get users error:', error);
     res.status(500).json({ error: 'Failed to get users' });
   }
 });
 
-// DELETE /api/admin/users/:id
 router.delete('/users/:id', authenticateToken, requireAdmin, async (req, res) => {
   const connection = await pool.getConnection();
 
@@ -166,7 +161,6 @@ router.delete('/users/:id', authenticateToken, requireAdmin, async (req, res) =>
     try {
       await connection.rollback();
     } catch (_) {}
-    // eslint-disable-next-line no-console
     console.error('Delete user error:', error);
     res.status(500).json({ error: 'Failed to delete user' });
   } finally {
@@ -174,7 +168,6 @@ router.delete('/users/:id', authenticateToken, requireAdmin, async (req, res) =>
   }
 });
 
-// GET /api/admin/products - list products for admin
 router.get('/products', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const page = parseInt(req.query.page || '1', 10);
@@ -226,13 +219,11 @@ router.get('/products', authenticateToken, requireAdmin, async (req, res) => {
     const [products] = await pool.execute(query, params);
     res.json(products);
   } catch (error) {
-    // eslint-disable-next-line no-console
     console.error('Get admin products error:', error);
     res.status(500).json({ error: 'Failed to get products' });
   }
 });
 
-// PUT /api/admin/products/:id/toggle - toggle product status
 router.put('/products/:id/toggle', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const productId = req.params.id;
@@ -246,13 +237,11 @@ router.put('/products/:id/toggle', authenticateToken, requireAdmin, async (req, 
 
     res.json({ message: 'Product status updated' });
   } catch (error) {
-    // eslint-disable-next-line no-console
     console.error('Toggle product error:', error);
     res.status(500).json({ error: 'Failed to toggle product status' });
   }
 });
 
-// DELETE /api/admin/products/:id - hard delete product
 router.delete('/products/:id', authenticateToken, requireAdmin, async (req, res) => {
   const connection = await pool.getConnection();
 
@@ -261,7 +250,6 @@ router.delete('/products/:id', authenticateToken, requireAdmin, async (req, res)
 
     await connection.beginTransaction();
 
-    // Foreign keys already cascade on product_id, but be explicit
     await connection.execute('DELETE FROM product_image WHERE product_id = ?', [productId]);
     await connection.execute('DELETE FROM product_category WHERE product_id = ?', [productId]);
     await connection.execute('DELETE FROM product_variant WHERE product_id = ?', [productId]);
@@ -274,7 +262,6 @@ router.delete('/products/:id', authenticateToken, requireAdmin, async (req, res)
     try {
       await connection.rollback();
     } catch (_) {}
-    // eslint-disable-next-line no-console
     console.error('Delete product error:', error);
     res.status(500).json({ error: 'Failed to delete product' });
   } finally {
@@ -282,7 +269,6 @@ router.delete('/products/:id', authenticateToken, requireAdmin, async (req, res)
   }
 });
 
-// GET /api/admin/orders - list orders for admin
 router.get('/orders', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const status = req.query.status || '';
@@ -319,13 +305,11 @@ router.get('/orders', authenticateToken, requireAdmin, async (req, res) => {
 
     res.json(orders);
   } catch (error) {
-    // eslint-disable-next-line no-console
     console.error('Get admin orders error:', error);
     res.status(500).json({ error: 'Failed to get orders' });
   }
 });
 
-// PUT /api/admin/orders/:id/status - update order status
 router.put(
   '/orders/:id/status',
   [
@@ -364,14 +348,12 @@ router.put(
 
       res.json({ message: 'Order status updated successfully' });
     } catch (error) {
-      // eslint-disable-next-line no-console
       console.error('Update order status error:', error);
       res.status(500).json({ error: 'Failed to update order status' });
     }
   }
 );
 
-// POST /api/admin/make-admin/:userId - promote user to admin
 router.post('/make-admin/:userId', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const userId = req.params.userId;
@@ -401,7 +383,6 @@ router.post('/make-admin/:userId', authenticateToken, requireAdmin, async (req, 
 
     res.json({ message: 'User promoted to admin successfully' });
   } catch (error) {
-    // eslint-disable-next-line no-console
     console.error('Make admin error:', error);
     res.status(500).json({ error: 'Failed to make user admin' });
   }

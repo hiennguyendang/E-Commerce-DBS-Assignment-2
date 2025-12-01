@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axiosInstance from "../utils/axiosConfig";
 import Spinner from "../components/common/Spinner";
-import Modal from "../components/common/Modal";
 
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState(null);
@@ -22,6 +21,7 @@ export default function AdminDashboardPage() {
     if (activeTab === 'users') fetchUsers();
     else if (activeTab === 'products') fetchProducts();
     else if (activeTab === 'orders') fetchOrders();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 
   const fetchStats = async () => {

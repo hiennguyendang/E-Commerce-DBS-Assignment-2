@@ -45,7 +45,6 @@ export default function HomePage({ onAddToCart }) {
             : []
         );
       } catch (err) {
-        // eslint-disable-next-line no-console
         console.error("Không thể tải dữ liệu sản phẩm:", err);
       } finally {
         setLoading(false);
@@ -76,7 +75,6 @@ export default function HomePage({ onAddToCart }) {
         const list = res.data?.products || [];
         setFiltered(normalizeProducts(list));
       } catch (err) {
-        // eslint-disable-next-line no-console
         console.error("Lọc theo danh mục lỗi:", err);
         setFiltered(products);
       }

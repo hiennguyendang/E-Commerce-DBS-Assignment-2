@@ -1,856 +1,602 @@
-﻿-- Sample data for Shopeelike on Microsoft SQL Server
--- Simplified, SQL Server–compatible version of mockup_data_shopeelike.sql
-
+﻿-- ============================================
+-- MOCKUP DATA FOR SHOPEELIKE (MSSQL VERSION)
+-- ============================================
 USE shopeelike;
+GO
 
-SET ANSI_NULLS ON;
-SET QUOTED_IDENTIFIER ON;
 SET NOCOUNT ON;
 
--- SHIPPING SERVICE
-IF NOT EXISTS (SELECT 1 FROM dbo.shipping_service)
+-- 1. Shipping services
+IF NOT EXISTS (SELECT 1 FROM dbo.shipping_service WHERE carrier = 'DefaultCarrier')
 BEGIN
     INSERT INTO dbo.shipping_service (carrier, service_name, est_days_min, est_days_max, base_fee, per_kg_fee)
-    VALUES (N'DefaultCarrier', N'Standard', 2, 5, 0, 0);
+    VALUES 
+      ('DefaultCarrier', 'Standard', 2, 5, 0, 0),
+      ('VNPost', 'Express', 1, 3, 25000, 5000),
+      ('GiaoHangNhanh', 'Fast', 1, 2, 30000, 7000),
+      ('J&T Express', 'Economy', 3, 7, 15000, 3000),
+      ('Grab Express', 'Same Day', 0, 1, 50000, 10000);
 END;
+GO
 
--- CATEGORIES
-IF NOT EXISTS (SELECT 1 FROM dbo.category WHERE name = N'Electronics')
+-- 2. Categories
+IF NOT EXISTS (SELECT 1 FROM dbo.category WHERE name = 'Electronics')
 BEGIN
     INSERT INTO dbo.category (name, description)
     VALUES 
-      (N'Electronics',      N'Devices and gadgets'),
-      (N'Fashion',          N'Clothing and accessories'),
-      (N'Home & Living',    N'Furniture and decor');
+      ('Electronics', 'Devices and gadgets'),
+      ('Fashion', 'Clothing and accessories'),
+      ('Home & Living', 'Furniture and decor'),
+      ('Books & Stationery', 'Books, notebooks, and office supplies'),
+      ('Sports & Outdoors', 'Sports equipment and outdoor gear'),
+      ('Beauty & Health', 'Cosmetics and health products'),
+      ('Toys & Games', 'Toys, games, and hobbies'),
+      ('Food & Beverages', 'Fresh food, snacks, and drinks'),
+      ('Automotive', 'Car accessories and parts'),
+      ('Pet Supplies', 'Pet food and accessories');
 END;
+GO
 
--- SELLER ACCOUNT + PROFILE
-DECLARE @seller_user_id BIGINT;
+-- 3. Sellers (User Accounts + Seller Profiles)
+-- Helper variable to store user_id
+DECLARE @uid BIGINT;
 
-IF NOT EXISTS (SELECT 1 FROM dbo.user_account WHERE email = N'seller1@demo.com')
+-- Seller 1
+IF NOT EXISTS (SELECT 1 FROM dbo.user_account WHERE email = 'seller1@demo.com')
 BEGIN
     INSERT INTO dbo.user_account (email, password_hash, display_name, user_name, phone_number, date_of_birth)
-    VALUES (
-        N'seller1@demo.com',
-        N'$2a$10$LEE5v5MMt0tgzp5vta8/zew6BhgDpfIwg7/9fKOEbrtZj8LfeJEkK',
-        N'Tech Store',
-        N'techstore',
-        N'+84901111111',
-        '1990-01-01'
-    );
-
-    SET @seller_user_id = SCOPE_IDENTITY();
-END
-ELSE
-BEGIN
-    SELECT @seller_user_id = user_id
-    FROM dbo.user_account
-    WHERE email = N'seller1@demo.com';
-END;
-
-IF NOT EXISTS (SELECT 1 FROM dbo.seller WHERE user_id = @seller_user_id)
-BEGIN
+    VALUES ('seller1@demo.com', '$2a$10$LEE5v5MMt0tgzp5vta8/zew6BhgDpfIwg7/9fKOEbrtZj8LfeJEkK', 'Tech Store', 'techstore', '+84901111111', '1990-01-01');
+    
+    SET @uid = SCOPE_IDENTITY();
+    
     INSERT INTO dbo.seller (seller_id, user_id, shop_name, tax_id)
-    VALUES (NULL, @seller_user_id, N'Tech Store', N'TAX123456');
+    VALUES (NULL, @uid, 'Tech Store', 'TAX123456');
 END;
 
+-- Seller 2
+IF NOT EXISTS (SELECT 1 FROM dbo.user_account WHERE email = 'seller2@demo.com')
+BEGIN
+    INSERT INTO dbo.user_account (email, password_hash, display_name, user_name, phone_number, date_of_birth)
+    VALUES ('seller2@demo.com', '$2a$10$LEE5v5MMt0tgzp5vta8/zew6BhgDpfIwg7/9fKOEbrtZj8LfeJEkK', 'Fashion Hub', 'fashionhub', '+84902222222', '1988-05-15');
+    
+    SET @uid = SCOPE_IDENTITY();
+    
+    INSERT INTO dbo.seller (seller_id, user_id, shop_name, tax_id)
+    VALUES (NULL, @uid, 'Fashion Hub', 'TAX234567');
+END;
+
+-- Seller 3
+IF NOT EXISTS (SELECT 1 FROM dbo.user_account WHERE email = 'seller3@demo.com')
+BEGIN
+    INSERT INTO dbo.user_account (email, password_hash, display_name, user_name, phone_number, date_of_birth)
+    VALUES ('seller3@demo.com', '$2a$10$LEE5v5MMt0tgzp5vta8/zew6BhgDpfIwg7/9fKOEbrtZj8LfeJEkK', 'Home Decor Plus', 'homedecor', '+84903333333', '1985-08-20');
+    
+    SET @uid = SCOPE_IDENTITY();
+    
+    INSERT INTO dbo.seller (seller_id, user_id, shop_name, tax_id)
+    VALUES (NULL, @uid, 'Home Decor Plus', 'TAX345678');
+END;
+
+-- Seller 4
+IF NOT EXISTS (SELECT 1 FROM dbo.user_account WHERE email = 'seller4@demo.com')
+BEGIN
+    INSERT INTO dbo.user_account (email, password_hash, display_name, user_name, phone_number, date_of_birth)
+    VALUES ('seller4@demo.com', '$2a$10$LEE5v5MMt0tgzp5vta8/zew6BhgDpfIwg7/9fKOEbrtZj8LfeJEkK', 'Book World', 'bookworld', '+84904444444', '1992-11-10');
+    
+    SET @uid = SCOPE_IDENTITY();
+    
+    INSERT INTO dbo.seller (seller_id, user_id, shop_name, tax_id)
+    VALUES (NULL, @uid, 'Book World', 'TAX456789');
+END;
+
+-- Seller 5
+IF NOT EXISTS (SELECT 1 FROM dbo.user_account WHERE email = 'seller5@demo.com')
+BEGIN
+    INSERT INTO dbo.user_account (email, password_hash, display_name, user_name, phone_number, date_of_birth)
+    VALUES ('seller5@demo.com', '$2a$10$LEE5v5MMt0tgzp5vta8/zew6BhgDpfIwg7/9fKOEbrtZj8LfeJEkK', 'Sports Pro', 'sportspro', '+84905555555', '1987-03-25');
+    
+    SET @uid = SCOPE_IDENTITY();
+    
+    INSERT INTO dbo.seller (seller_id, user_id, shop_name, tax_id)
+    VALUES (NULL, @uid, 'Sports Pro', 'TAX567890');
+END;
+GO
+
+-- 4. Products (100 items)
+IF NOT EXISTS (SELECT 1 FROM dbo.product)
+BEGIN
+    -- Get Seller IDs
+    DECLARE @s1 CHAR(6), @s2 CHAR(6), @s3 CHAR(6), @s4 CHAR(6), @s5 CHAR(6);
+    SELECT @s1 = seller_id FROM dbo.seller WHERE shop_name = 'Tech Store';
+    SELECT @s2 = seller_id FROM dbo.seller WHERE shop_name = 'Fashion Hub';
+    SELECT @s3 = seller_id FROM dbo.seller WHERE shop_name = 'Home Decor Plus';
+    SELECT @s4 = seller_id FROM dbo.seller WHERE shop_name = 'Book World';
+    SELECT @s5 = seller_id FROM dbo.seller WHERE shop_name = 'Sports Pro';
+
+    INSERT INTO dbo.product (seller_id, title, description, status) VALUES
+    (@s1, 'iPhone 15 Pro Max', 'Latest Apple flagship smartphone', 'Active'),
+    (@s1, 'Samsung Galaxy S24 Ultra', 'Premium Android smartphone', 'Active'),
+    (@s1, 'MacBook Pro M3 14"', 'Professional laptop for creators', 'Active'),
+    (@s1, 'Dell XPS 15', 'High-performance Windows laptop', 'Active'),
+    (@s1, 'iPad Air 11"', 'Versatile tablet for work and play', 'Active'),
+    (@s1, 'Sony WH-1000XM5', 'Premium noise-canceling headphones', 'Active'),
+    (@s1, 'AirPods Pro 2', 'Wireless earbuds with ANC', 'Active'),
+    (@s1, 'Apple Watch Series 9', 'Advanced smartwatch', 'Active'),
+    (@s1, 'Samsung Galaxy Watch 6', 'Android smartwatch', 'Active'),
+    (@s1, 'Canon EOS R6', 'Full-frame mirrorless camera', 'Active'),
+    (@s1, 'Sony A7 IV', 'Professional camera body', 'Active'),
+    (@s1, 'GoPro Hero 12', 'Action camera 5K60', 'Active'),
+    (@s1, 'DJI Mini 4 Pro', 'Compact foldable drone', 'Active'),
+    (@s1, 'PS5 Console', 'Next-gen gaming console', 'Active'),
+    (@s1, 'Xbox Series X', 'Microsoft gaming console', 'Active'),
+    (@s1, 'Nintendo Switch OLED', 'Hybrid gaming console', 'Active'),
+    (@s1, 'LG 55" OLED TV', '4K OLED Smart TV', 'Active'),
+    (@s1, 'Samsung 65" QLED TV', 'Quantum dot display', 'Active'),
+    (@s1, 'Bose SoundLink', 'Portable Bluetooth speaker', 'Active'),
+    (@s1, 'Logitech MX Master 3S', 'Wireless productivity mouse', 'Active'),
+    
+    (@s2, 'Nike Air Max 270', 'Comfortable running shoes', 'Active'),
+    (@s2, 'Adidas Ultraboost 23', 'Performance running shoes', 'Active'),
+    (@s2, 'Levi''s 501 Jeans', 'Classic straight fit jeans', 'Active'),
+    (@s2, 'Uniqlo Cotton T-Shirt', 'Basic comfort tee', 'Active'),
+    (@s2, 'Zara Wool Coat', 'Winter long coat', 'Active'),
+    (@s2, 'H&M Dress', 'Summer floral dress', 'Active'),
+    (@s2, 'Ralph Lauren Polo', 'Classic polo shirt', 'Active'),
+    (@s2, 'Tommy Hilfiger Jacket', 'Denim jacket', 'Active'),
+    (@s2, 'Converse Chuck Taylor', 'Classic canvas sneakers', 'Active'),
+    (@s2, 'Vans Old Skool', 'Skate shoes', 'Active'),
+    (@s2, 'Ray-Ban Aviator', 'Classic sunglasses', 'Active'),
+    (@s2, 'Casio G-Shock', 'Digital sports watch', 'Active'),
+    (@s2, 'Michael Kors Bag', 'Leather handbag', 'Active'),
+    (@s2, 'Gucci Belt', 'Luxury leather belt', 'Active'),
+    (@s2, 'Nike Dri-FIT Shirt', 'Athletic performance tee', 'Active'),
+    (@s2, 'Adidas Track Pants', 'Comfortable joggers', 'Active'),
+    (@s2, 'Puma Hoodie', 'Warm pullover hoodie', 'Active'),
+    (@s2, 'The North Face Jacket', 'Outdoor winter jacket', 'Active'),
+    (@s2, 'Columbia Fleece', 'Soft fleece jacket', 'Active'),
+    (@s2, 'Timberland Boots', 'Waterproof work boots', 'Active'),
+
+    (@s3, 'IKEA Sofa Bed', 'Convertible 3-seater sofa', 'Active'),
+    (@s3, 'Dining Table Set', 'Wood table with 6 chairs', 'Active'),
+    (@s3, 'Queen Mattress', 'Memory foam mattress', 'Active'),
+    (@s3, 'Office Chair', 'Ergonomic mesh chair', 'Active'),
+    (@s3, 'Bookshelf', '5-tier wooden bookshelf', 'Active'),
+    (@s3, 'Table Lamp', 'Modern LED desk lamp', 'Active'),
+    (@s3, 'Floor Lamp', 'Tall standing lamp', 'Active'),
+    (@s3, 'Area Rug 5x7', 'Soft living room rug', 'Active'),
+    (@s3, 'Curtains Set', 'Blackout window curtains', 'Active'),
+    (@s3, 'Wall Mirror', 'Large decorative mirror', 'Active'),
+    (@s3, 'Plant Pot Set', 'Ceramic planters pack of 3', 'Active'),
+    (@s3, 'Throw Pillows', 'Decorative cushions set', 'Active'),
+    (@s3, 'Coffee Table', 'Glass top coffee table', 'Active'),
+    (@s3, 'TV Stand', 'Modern media console', 'Active'),
+    (@s3, 'Kitchen Cart', 'Rolling kitchen island', 'Active'),
+    (@s3, 'Bar Stools Set', 'Counter height stools', 'Active'),
+    (@s3, 'Nightstand', 'Bedside table with drawer', 'Active'),
+    (@s3, 'Wardrobe', 'Sliding door closet', 'Active'),
+    (@s3, 'Shoe Rack', 'Entryway shoe organizer', 'Active'),
+    (@s3, 'Coat Rack', 'Standing coat hanger', 'Active'),
+
+    (@s4, 'Harry Potter Set', 'Complete 7-book series', 'Active'),
+    (@s4, 'Atomic Habits', 'James Clear bestseller', 'Active'),
+    (@s4, 'The Alchemist', 'Paulo Coelho classic', 'Active'),
+    (@s4, '1984', 'George Orwell dystopian novel', 'Active'),
+    (@s4, 'Sapiens', 'Yuval Noah Harari', 'Active'),
+    (@s4, 'Educated', 'Tara Westover memoir', 'Active'),
+    (@s4, 'The Hobbit', 'J.R.R. Tolkien fantasy', 'Active'),
+    (@s4, 'Pride and Prejudice', 'Jane Austen romance', 'Active'),
+    (@s4, 'To Kill a Mockingbird', 'Harper Lee classic', 'Active'),
+    (@s4, 'Think and Grow Rich', 'Napoleon Hill', 'Active'),
+    (@s4, 'Notebook Set', 'Moleskine pack of 3', 'Active'),
+    (@s4, 'Fountain Pen', 'Parker premium pen', 'Active'),
+    (@s4, 'Pencil Case', 'Oxford pencil pouch', 'Active'),
+    (@s4, 'Highlighter Set', 'Stabilo pastel colors', 'Active'),
+    (@s4, 'Sticky Notes', 'Post-it assorted pack', 'Active'),
+    (@s4, 'Planner 2025', 'Daily productivity planner', 'Active'),
+    (@s4, 'Desk Organizer', 'Wooden pen holder', 'Active'),
+    (@s4, 'Stapler', 'Heavy duty stapler', 'Active'),
+    (@s4, 'Paper Clips', 'Assorted sizes box', 'Active'),
+    (@s4, 'Binder Set', '3-ring binders pack', 'Active'),
+
+    (@s5, 'Yoga Mat', 'Non-slip exercise mat', 'Active'),
+    (@s5, 'Dumbbell Set', 'Adjustable weights 20kg', 'Active'),
+    (@s5, 'Resistance Bands', 'Exercise bands set of 5', 'Active'),
+    (@s5, 'Treadmill', 'Foldable running machine', 'Active'),
+    (@s5, 'Exercise Bike', 'Indoor cycling bike', 'Active'),
+    (@s5, 'Pull-up Bar', 'Doorway chin-up bar', 'Active'),
+    (@s5, 'Jump Rope', 'Speed jump rope', 'Active'),
+    (@s5, 'Gym Bag', 'Large sports duffel bag', 'Active'),
+    (@s5, 'Water Bottle', '1L insulated bottle', 'Active'),
+    (@s5, 'Tennis Racket', 'Wilson pro racket', 'Active'),
+    (@s5, 'Basketball', 'Spalding official size', 'Active'),
+    (@s5, 'Soccer Ball', 'Adidas match ball', 'Active'),
+    (@s5, 'Badminton Set', 'Rackets and shuttlecocks', 'Active'),
+    (@s5, 'Golf Clubs', 'Complete set with bag', 'Active'),
+    (@s5, 'Camping Tent', '4-person waterproof tent', 'Active'),
+    (@s5, 'Sleeping Bag', 'All-season sleeping bag', 'Active'),
+    (@s5, 'Hiking Backpack', '50L outdoor backpack', 'Active'),
+    (@s5, 'Cycling Helmet', 'Safety bike helmet', 'Active'),
+    (@s5, 'Swimming Goggles', 'Anti-fog swim goggles', 'Active'),
+    (@s5, 'Fitness Tracker', 'Smart activity band', 'Active');
+END;
+GO
+
+-- 5. Product Categories
+IF NOT EXISTS (SELECT 1 FROM dbo.product_category)
+BEGIN
+    -- Electronics (1-20)
+    INSERT INTO dbo.product_category (product_id, category_id)
+    SELECT p.product_id, c.category_id 
+    FROM dbo.product p 
+    CROSS JOIN dbo.category c 
+    WHERE p.title IN (
+        'iPhone 15 Pro Max', 'Samsung Galaxy S24 Ultra', 'MacBook Pro M3 14"', 'Dell XPS 15', 'iPad Air 11"',
+        'Sony WH-1000XM5', 'AirPods Pro 2', 'Apple Watch Series 9', 'Samsung Galaxy Watch 6', 'Canon EOS R6',
+        'Sony A7 IV', 'GoPro Hero 12', 'DJI Mini 4 Pro', 'PS5 Console', 'Xbox Series X',
+        'Nintendo Switch OLED', 'LG 55" OLED TV', 'Samsung 65" QLED TV', 'Bose SoundLink', 'Logitech MX Master 3S'
+    ) AND c.name = 'Electronics';
+
+    -- Fashion (21-40)
+    INSERT INTO dbo.product_category (product_id, category_id)
+    SELECT p.product_id, c.category_id 
+    FROM dbo.product p 
+    CROSS JOIN dbo.category c 
+    WHERE p.title IN (
+        'Nike Air Max 270', 'Adidas Ultraboost 23', 'Levi''s 501 Jeans', 'Uniqlo Cotton T-Shirt', 'Zara Wool Coat',
+        'H&M Dress', 'Ralph Lauren Polo', 'Tommy Hilfiger Jacket', 'Converse Chuck Taylor', 'Vans Old Skool',
+        'Ray-Ban Aviator', 'Casio G-Shock', 'Michael Kors Bag', 'Gucci Belt', 'Nike Dri-FIT Shirt',
+        'Adidas Track Pants', 'Puma Hoodie', 'The North Face Jacket', 'Columbia Fleece', 'Timberland Boots'
+    ) AND c.name = 'Fashion';
+
+    -- Home & Living (41-60)
+    INSERT INTO dbo.product_category (product_id, category_id)
+    SELECT p.product_id, c.category_id 
+    FROM dbo.product p 
+    CROSS JOIN dbo.category c 
+    WHERE p.title IN (
+        'IKEA Sofa Bed', 'Dining Table Set', 'Queen Mattress', 'Office Chair', 'Bookshelf',
+        'Table Lamp', 'Floor Lamp', 'Area Rug 5x7', 'Curtains Set', 'Wall Mirror',
+        'Plant Pot Set', 'Throw Pillows', 'Coffee Table', 'TV Stand', 'Kitchen Cart',
+        'Bar Stools Set', 'Nightstand', 'Wardrobe', 'Shoe Rack', 'Coat Rack'
+    ) AND c.name = 'Home & Living';
+
+    -- Books & Stationery (61-80)
+    INSERT INTO dbo.product_category (product_id, category_id)
+    SELECT p.product_id, c.category_id 
+    FROM dbo.product p 
+    CROSS JOIN dbo.category c 
+    WHERE p.title IN (
+        'Harry Potter Set', 'Atomic Habits', 'The Alchemist', '1984', 'Sapiens',
+        'Educated', 'The Hobbit', 'Pride and Prejudice', 'To Kill a Mockingbird', 'Think and Grow Rich',
+        'Notebook Set', 'Fountain Pen', 'Pencil Case', 'Highlighter Set', 'Sticky Notes',
+        'Planner 2025', 'Desk Organizer', 'Stapler', 'Paper Clips', 'Binder Set'
+    ) AND c.name = 'Books & Stationery';
+
+    -- Sports & Outdoors (81-100)
+    INSERT INTO dbo.product_category (product_id, category_id)
+    SELECT p.product_id, c.category_id 
+    FROM dbo.product p 
+    CROSS JOIN dbo.category c 
+    WHERE p.title IN (
+        'Yoga Mat', 'Dumbbell Set', 'Resistance Bands', 'Treadmill', 'Exercise Bike',
+        'Pull-up Bar', 'Jump Rope', 'Gym Bag', 'Water Bottle', 'Tennis Racket',
+        'Basketball', 'Soccer Ball', 'Badminton Set', 'Golf Clubs', 'Camping Tent',
+        'Sleeping Bag', 'Hiking Backpack', 'Cycling Helmet', 'Swimming Goggles', 'Fitness Tracker'
+    ) AND c.name = 'Sports & Outdoors';
+END;
+GO
+
+-- 6. Product Variants & Images
+IF NOT EXISTS (SELECT 1 FROM dbo.product_variant)
+BEGIN
+    -- Insert variants for all products
+    INSERT INTO dbo.product_variant (product_id, variant_code, sku, list_price, stock_qty, is_active)
+    SELECT 
+        product_id, 
+        'DEFAULT', 
+        CONCAT('SKU', RIGHT('0000' + CAST(product_id AS VARCHAR(10)), 4)), 
+        CAST(ABS(CHECKSUM(NEWID()) % 10000000) + 100000 AS DECIMAL(18,2)), -- Random price between 100k and 10.1M
+        ABS(CHECKSUM(NEWID()) % 100) + 10, -- Random stock 10-110
+        1
+    FROM dbo.product;
+
+    -- Insert images for all products
+    INSERT INTO dbo.product_image (product_id, url, caption)
+    SELECT 
+        product_id, 
+        'https://via.placeholder.com/600x400?text=' + REPLACE(title, ' ', '+'),
+        title
+    FROM dbo.product;
+END;
+GO
+
+-- 7. Buyers
+DECLARE @uid BIGINT;
+
+-- Buyer 1
+IF NOT EXISTS (SELECT 1 FROM dbo.user_account WHERE email = 'buyer1@demo.com')
+BEGIN
+    INSERT INTO dbo.user_account (email, password_hash, display_name, user_name, phone_number, date_of_birth)
+    VALUES ('buyer1@demo.com', '$2a$10$LEE5v5MMt0tgzp5vta8/zew6BhgDpfIwg7/9fKOEbrtZj8LfeJEkK', 'Minh Nguyen', 'buyer1', '+84911111111', '1992-02-02');
+    SET @uid = SCOPE_IDENTITY();
+    INSERT INTO dbo.buyer (user_id, loyalty_level) VALUES (@uid, 'Silver');
+END;
+
+-- Buyer 2
+IF NOT EXISTS (SELECT 1 FROM dbo.user_account WHERE email = 'buyer2@demo.com')
+BEGIN
+    INSERT INTO dbo.user_account (email, password_hash, display_name, user_name, phone_number, date_of_birth)
+    VALUES ('buyer2@demo.com', '$2a$10$LEE5v5MMt0tgzp5vta8/zew6BhgDpfIwg7/9fKOEbrtZj8LfeJEkK', 'Lan Tran', 'buyer2', '+84922222222', '1995-03-03');
+    SET @uid = SCOPE_IDENTITY();
+    INSERT INTO dbo.buyer (user_id, loyalty_level) VALUES (@uid, 'Bronze');
+END;
+
+-- Buyer 3
+IF NOT EXISTS (SELECT 1 FROM dbo.user_account WHERE email = 'buyer3@demo.com')
+BEGIN
+    INSERT INTO dbo.user_account (email, password_hash, display_name, user_name, phone_number, date_of_birth)
+    VALUES ('buyer3@demo.com', '$2a$10$LEE5v5MMt0tgzp5vta8/zew6BhgDpfIwg7/9fKOEbrtZj8LfeJEkK', 'Quang Le', 'buyer3', '+84933333333', '1990-07-15');
+    SET @uid = SCOPE_IDENTITY();
+    INSERT INTO dbo.buyer (user_id, loyalty_level) VALUES (@uid, 'Gold');
+END;
+
+-- Buyer 4
+IF NOT EXISTS (SELECT 1 FROM dbo.user_account WHERE email = 'buyer4@demo.com')
+BEGIN
+    INSERT INTO dbo.user_account (email, password_hash, display_name, user_name, phone_number, date_of_birth)
+    VALUES ('buyer4@demo.com', '$2a$10$LEE5v5MMt0tgzp5vta8/zew6BhgDpfIwg7/9fKOEbrtZj8LfeJEkK', 'Hoa Pham', 'buyer4', '+84944444444', '1993-12-05');
+    SET @uid = SCOPE_IDENTITY();
+    INSERT INTO dbo.buyer (user_id, loyalty_level) VALUES (@uid, 'Platinum');
+END;
+GO
+
+-- 8. Addresses
+-- Seller Address
 DECLARE @seller_id CHAR(6);
-SELECT @seller_id = seller_id FROM dbo.seller WHERE user_id = @seller_user_id;
+SELECT TOP 1 @seller_id = seller_id FROM dbo.seller WHERE shop_name = 'Tech Store';
 
--- PRODUCTS, VARIANTS, IMAGES
-DECLARE @cat_electronics   BIGINT;
-DECLARE @cat_fashion       BIGINT;
-DECLARE @cat_home_living   BIGINT;
-
-SELECT @cat_electronics   = category_id FROM dbo.category WHERE name = N'Electronics';
-SELECT @cat_fashion       = category_id FROM dbo.category WHERE name = N'Fashion';
-SELECT @cat_home_living   = category_id FROM dbo.category WHERE name = N'Home & Living';
-
-DECLARE @phone_product_id        BIGINT;
-DECLARE @laptop_product_id       BIGINT;
-DECLARE @headphone_product_id    BIGINT;
-DECLARE @watch_product_id        BIGINT;
-DECLARE @backpack_product_id     BIGINT;
-DECLARE @shoes_product_id        BIGINT;
-DECLARE @smart_speaker_product_id BIGINT;
-DECLARE @gaming_monitor_product_id BIGINT;
-DECLARE @earbuds_product_id      BIGINT;
-DECLARE @tshirt_product_id       BIGINT;
-DECLARE @jacket_product_id       BIGINT;
-DECLARE @shorts_product_id       BIGINT;
-DECLARE @chair_product_id        BIGINT;
-DECLARE @lamp_product_id         BIGINT;
-DECLARE @mug_product_id          BIGINT;
-
-IF NOT EXISTS (SELECT 1 FROM dbo.product WHERE title = N'Sample Phone X')
+IF NOT EXISTS (SELECT 1 FROM dbo.address WHERE seller_id = @seller_id)
 BEGIN
-    INSERT INTO dbo.product (seller_id, title, description, status)
+    INSERT INTO dbo.address (seller_id, recipient_name, phone, line1, city, country, is_default)
+    VALUES (@seller_id, 'Tech Store Warehouse', '+84901111111', '456 Vo Van Tan', 'Ho Chi Minh City', 'VN', 1);
+END;
+
+-- Buyer Addresses
+DECLARE @b1 BIGINT, @b2 BIGINT, @b3 BIGINT;
+SELECT @b1 = user_id FROM dbo.user_account WHERE email = 'buyer1@demo.com';
+SELECT @b2 = user_id FROM dbo.user_account WHERE email = 'buyer2@demo.com';
+SELECT @b3 = user_id FROM dbo.user_account WHERE email = 'buyer3@demo.com';
+
+IF NOT EXISTS (SELECT 1 FROM dbo.address WHERE buyer_id = @b1)
+    INSERT INTO dbo.address (buyer_id, recipient_name, phone, line1, city, country, postal_code, is_default)
+    VALUES (@b1, 'Minh Nguyen', '+84911111111', '123 Le Loi', 'Ho Chi Minh City', 'VN', '700000', 1);
+
+IF NOT EXISTS (SELECT 1 FROM dbo.address WHERE buyer_id = @b2)
+    INSERT INTO dbo.address (buyer_id, recipient_name, phone, line1, city, country, postal_code, is_default)
+    VALUES (@b2, 'Lan Tran', '+84922222222', '89 Nguyen Hue', 'Ho Chi Minh City', 'VN', '700100', 1);
+
+IF NOT EXISTS (SELECT 1 FROM dbo.address WHERE buyer_id = @b3)
+    INSERT INTO dbo.address (buyer_id, recipient_name, phone, line1, city, country, postal_code, is_default)
+    VALUES (@b3, 'Quang Le', '+84933333333', '45 Tran Hung Dao', 'Ha Noi', 'VN', '100000', 1);
+GO
+
+-- 9. Orders & Order Items
+DECLARE @b1 BIGINT, @b2 BIGINT, @b3 BIGINT;
+SELECT @b1 = user_id FROM dbo.user_account WHERE email = 'buyer1@demo.com';
+SELECT @b2 = user_id FROM dbo.user_account WHERE email = 'buyer2@demo.com';
+SELECT @b3 = user_id FROM dbo.user_account WHERE email = 'buyer3@demo.com';
+
+DECLARE @addr1 BIGINT, @addr2 BIGINT, @addr3 BIGINT, @addr_seller BIGINT;
+SELECT TOP 1 @addr1 = address_id FROM dbo.address WHERE buyer_id = @b1;
+SELECT TOP 1 @addr2 = address_id FROM dbo.address WHERE buyer_id = @b2;
+SELECT TOP 1 @addr3 = address_id FROM dbo.address WHERE buyer_id = @b3;
+SELECT TOP 1 @addr_seller = address_id FROM dbo.address WHERE seller_id IS NOT NULL;
+
+DECLARE @svc SMALLINT;
+SELECT TOP 1 @svc = service_id FROM dbo.shipping_service;
+
+DECLARE @p1 BIGINT, @p2 BIGINT, @p3 BIGINT, @p4 BIGINT, @p5 BIGINT;
+SELECT @p1 = product_id FROM dbo.product WHERE title = 'iPhone 15 Pro Max';
+SELECT @p2 = product_id FROM dbo.product WHERE title = 'MacBook Pro M3 14"';
+SELECT @p3 = product_id FROM dbo.product WHERE title = 'Sony WH-1000XM5';
+SELECT @p4 = product_id FROM dbo.product WHERE title = 'Zara Wool Coat';
+SELECT @p5 = product_id FROM dbo.product WHERE title = 'Harry Potter Set';
+
+DECLARE @price1 DECIMAL(18,2), @price2 DECIMAL(18,2), @price3 DECIMAL(18,2), @price4 DECIMAL(18,2), @price5 DECIMAL(18,2);
+SELECT @price1 = list_price FROM dbo.product_variant WHERE product_id = @p1;
+SELECT @price2 = list_price FROM dbo.product_variant WHERE product_id = @p2;
+SELECT @price3 = list_price FROM dbo.product_variant WHERE product_id = @p3;
+SELECT @price4 = list_price FROM dbo.product_variant WHERE product_id = @p4;
+SELECT @price5 = list_price FROM dbo.product_variant WHERE product_id = @p5;
+
+-- Order 1
+IF NOT EXISTS (SELECT 1 FROM dbo.orders WHERE buyer_id = @b1 AND status = 'Completed')
+BEGIN
+    INSERT INTO dbo.orders (buyer_id, ship_to_address_id, ship_from_address_id, service_id, shipping_fee, status, total_amount)
+    VALUES (@b1, @addr1, @addr_seller, @svc, 30000, 'Completed', 0);
+    
+    DECLARE @oid1 BIGINT = SCOPE_IDENTITY();
+    INSERT INTO dbo.order_item (order_id, line_no, product_id, variant_code, qty, unit_price)
+    VALUES (@oid1, 1, @p1, 'DEFAULT', 1, @price1);
+END;
+
+-- Order 2
+IF NOT EXISTS (SELECT 1 FROM dbo.orders WHERE buyer_id = @b2 AND status = 'Paid')
+BEGIN
+    INSERT INTO dbo.orders (buyer_id, ship_to_address_id, ship_from_address_id, service_id, shipping_fee, status, total_amount)
+    VALUES (@b2, @addr2, @addr_seller, @svc, 50000, 'Paid', 0);
+    
+    DECLARE @oid2 BIGINT = SCOPE_IDENTITY();
+    INSERT INTO dbo.order_item (order_id, line_no, product_id, variant_code, qty, unit_price)
+    VALUES (@oid2, 1, @p2, 'DEFAULT', 1, @price2),
+           (@oid2, 2, @p3, 'DEFAULT', 2, @price3);
+END;
+
+-- Order 3
+IF NOT EXISTS (SELECT 1 FROM dbo.orders WHERE buyer_id = @b3 AND status = 'Shipped')
+BEGIN
+    INSERT INTO dbo.orders (buyer_id, ship_to_address_id, ship_from_address_id, service_id, shipping_fee, status, total_amount)
+    VALUES (@b3, @addr3, @addr_seller, @svc, 25000, 'Shipped', 0);
+    
+    DECLARE @oid3 BIGINT = SCOPE_IDENTITY();
+    INSERT INTO dbo.order_item (order_id, line_no, product_id, variant_code, qty, unit_price)
+    VALUES (@oid3, 1, @p4, 'DEFAULT', 2, @price4);
+END;
+
+-- Order 4
+IF NOT EXISTS (SELECT 1 FROM dbo.orders WHERE buyer_id = @b1 AND status = 'Pending')
+BEGIN
+    INSERT INTO dbo.orders (buyer_id, ship_to_address_id, ship_from_address_id, service_id, shipping_fee, status, total_amount)
+    VALUES (@b1, @addr1, @addr_seller, @svc, 0, 'Pending', 0);
+    
+    DECLARE @oid4 BIGINT = SCOPE_IDENTITY();
+    INSERT INTO dbo.order_item (order_id, line_no, product_id, variant_code, qty, unit_price)
+    VALUES (@oid4, 1, @p5, 'DEFAULT', 1, @price5);
+END;
+GO
+
+-- 10. Admins
+DECLARE @uid BIGINT;
+
+IF NOT EXISTS (SELECT 1 FROM dbo.user_account WHERE email = 'admin1@demo.com')
+BEGIN
+    INSERT INTO dbo.user_account (email, password_hash, display_name, user_name, phone_number, date_of_birth)
+    VALUES ('admin1@demo.com', '$2a$10$LEE5v5MMt0tgzp5vta8/zew6BhgDpfIwg7/9fKOEbrtZj8LfeJEkK', 'System Admin', 'sysadmin', '+84900000001', '1985-01-15');
+    SET @uid = SCOPE_IDENTITY();
+    INSERT INTO dbo.admin (user_id, role) VALUES (@uid, 'SystemAdmin');
+END;
+
+IF NOT EXISTS (SELECT 1 FROM dbo.user_account WHERE email = 'admin2@demo.com')
+BEGIN
+    INSERT INTO dbo.user_account (email, password_hash, display_name, user_name, phone_number, date_of_birth)
+    VALUES ('admin2@demo.com', '$2a$10$LEE5v5MMt0tgzp5vta8/zew6BhgDpfIwg7/9fKOEbrtZj8LfeJEkK', 'Content Mod', 'contentmod', '+84900000002', '1988-03-20');
+    SET @uid = SCOPE_IDENTITY();
+    INSERT INTO dbo.admin (user_id, role) VALUES (@uid, 'ContentModerator');
+END;
+
+IF NOT EXISTS (SELECT 1 FROM dbo.user_account WHERE email = 'admin3@demo.com')
+BEGIN
+    INSERT INTO dbo.user_account (email, password_hash, display_name, user_name, phone_number, date_of_birth)
+    VALUES ('admin3@demo.com', '$2a$10$LEE5v5MMt0tgzp5vta8/zew6BhgDpfIwg7/9fKOEbrtZj8LfeJEkK', 'Support Agent', 'supportagent', '+84900000003', '1990-06-10');
+    SET @uid = SCOPE_IDENTITY();
+    INSERT INTO dbo.admin (user_id, role) VALUES (@uid, 'SupportAgent');
+END;
+
+IF NOT EXISTS (SELECT 1 FROM dbo.user_account WHERE email = 'admin4@demo.com')
+BEGIN
+    INSERT INTO dbo.user_account (email, password_hash, display_name, user_name, phone_number, date_of_birth)
+    VALUES ('admin4@demo.com', '$2a$10$LEE5v5MMt0tgzp5vta8/zew6BhgDpfIwg7/9fKOEbrtZj8LfeJEkK', 'Finance Officer', 'financeofficer', '+84900000004', '1987-09-25');
+    SET @uid = SCOPE_IDENTITY();
+    INSERT INTO dbo.admin (user_id, role) VALUES (@uid, 'FinanceOfficer');
+END;
+GO
+
+-- 11. Reviews
+-- Need to link to existing orders. We created 4 orders above.
+-- Order 1 (Buyer 1, Product 1)
+-- Order 2 (Buyer 2, Product 2, 3)
+-- Order 3 (Buyer 3, Product 4)
+DECLARE @oid1 BIGINT, @oid2 BIGINT, @oid3 BIGINT;
+DECLARE @b1 BIGINT, @b2 BIGINT, @b3 BIGINT;
+
+SELECT @b1 = user_id FROM dbo.user_account WHERE email = 'buyer1@demo.com';
+SELECT @b2 = user_id FROM dbo.user_account WHERE email = 'buyer2@demo.com';
+SELECT @b3 = user_id FROM dbo.user_account WHERE email = 'buyer3@demo.com';
+
+SELECT TOP 1 @oid1 = order_id FROM dbo.orders WHERE buyer_id = @b1 AND status = 'Completed';
+SELECT TOP 1 @oid2 = order_id FROM dbo.orders WHERE buyer_id = @b2 AND status = 'Paid';
+SELECT TOP 1 @oid3 = order_id FROM dbo.orders WHERE buyer_id = @b3 AND status = 'Shipped';
+
+IF @oid1 IS NOT NULL AND NOT EXISTS (SELECT 1 FROM dbo.review WHERE order_id = @oid1)
+    INSERT INTO dbo.review (order_id, line_no, buyer_id, rating, content, created_at)
+    VALUES (@oid1, 1, @b1, 5, 'Amazing phone! Love the camera.', DATEADD(DAY, -10, SYSDATETIME()));
+
+IF @oid2 IS NOT NULL AND NOT EXISTS (SELECT 1 FROM dbo.review WHERE order_id = @oid2)
+    INSERT INTO dbo.review (order_id, line_no, buyer_id, rating, content, created_at)
+    VALUES (@oid2, 1, @b2, 4, 'Great laptop but expensive.', DATEADD(DAY, -8, SYSDATETIME()));
+
+IF @oid3 IS NOT NULL AND NOT EXISTS (SELECT 1 FROM dbo.review WHERE order_id = @oid3)
+    INSERT INTO dbo.review (order_id, line_no, buyer_id, rating, content, created_at)
+    VALUES (@oid3, 1, @b3, 5, 'Very warm coat, perfect fit.', DATEADD(DAY, -5, SYSDATETIME()));
+GO
+
+-- 12. Vouchers
+IF NOT EXISTS (SELECT 1 FROM dbo.voucher WHERE code = 'TECH50')
+BEGIN
+    INSERT INTO dbo.voucher (code, discount_type, discount_value, min_order_value, max_discount, valid_from, valid_until, usage_limit, used_count, status)
     VALUES
-      (@seller_id, N'Sample Phone X',             N'A modern smartphone',          N'Active'),
-      (@seller_id, N'Lightweight Laptop 13"',    N'Portable productivity laptop', N'Active'),
-      (@seller_id, N'Noise-canceling Headphones', N'Immersive sound experience',  N'Active');
-END;
-
-IF NOT EXISTS (SELECT 1 FROM dbo.product WHERE title = N'Smart Fitness Watch')
-BEGIN
-    INSERT INTO dbo.product (seller_id, title, description, status)
-    VALUES (@seller_id, N'Smart Fitness Watch', N'Waterproof fitness tracker with heart-rate monitor', N'Active');
-END;
-
-IF NOT EXISTS (SELECT 1 FROM dbo.product WHERE title = N'Urban Travel Backpack')
-BEGIN
-    INSERT INTO dbo.product (seller_id, title, description, status)
-    VALUES (@seller_id, N'Urban Travel Backpack', N'Laptop-friendly backpack for daily commute', N'Active');
-END;
-
-IF NOT EXISTS (SELECT 1 FROM dbo.product WHERE title = N'Running Shoes Pro')
-BEGIN
-    INSERT INTO dbo.product (seller_id, title, description, status)
-    VALUES (@seller_id, N'Running Shoes Pro', N'Lightweight running shoes with breathable mesh', N'Active');
-END;
-
--- Extra electronics for richer catalog
-IF NOT EXISTS (SELECT 1 FROM dbo.product WHERE title = N'Smart Home Speaker')
-BEGIN
-    INSERT INTO dbo.product (seller_id, title, description, status)
-    VALUES (@seller_id, N'Smart Home Speaker', N'Voice-controlled smart speaker for your living room', N'Active');
-END;
-
-IF NOT EXISTS (SELECT 1 FROM dbo.product WHERE title = N'4K Gaming Monitor 27"')
-BEGIN
-    INSERT INTO dbo.product (seller_id, title, description, status)
-    VALUES (@seller_id, N'4K Gaming Monitor 27"', N'High refresh-rate 4K monitor for gaming and work', N'Active');
-END;
-
-IF NOT EXISTS (SELECT 1 FROM dbo.product WHERE title = N'Truly Wireless Earbuds')
-BEGIN
-    INSERT INTO dbo.product (seller_id, title, description, status)
-    VALUES (@seller_id, N'Truly Wireless Earbuds', N'Compact earbuds with noise isolation and long battery life', N'Active');
-END;
-
--- Fashion products
-IF NOT EXISTS (SELECT 1 FROM dbo.product WHERE title = N'Classic Cotton T-Shirt')
-BEGIN
-    INSERT INTO dbo.product (seller_id, title, description, status)
-    VALUES (@seller_id, N'Classic Cotton T-Shirt', N'Soft unisex cotton t-shirt for daily wear', N'Active');
-END;
-
-IF NOT EXISTS (SELECT 1 FROM dbo.product WHERE title = N'Denim Jacket')
-BEGIN
-    INSERT INTO dbo.product (seller_id, title, description, status)
-    VALUES (@seller_id, N'Denim Jacket', N'Casual denim jacket, slim fit style', N'Active');
-END;
-
-IF NOT EXISTS (SELECT 1 FROM dbo.product WHERE title = N'Sport Running Shorts')
-BEGIN
-    INSERT INTO dbo.product (seller_id, title, description, status)
-    VALUES (@seller_id, N'Sport Running Shorts', N'Breathable running shorts with inner lining', N'Active');
-END;
-
--- Home & Living products
-IF NOT EXISTS (SELECT 1 FROM dbo.product WHERE title = N'Ergonomic Office Chair')
-BEGIN
-    INSERT INTO dbo.product (seller_id, title, description, status)
-    VALUES (@seller_id, N'Ergonomic Office Chair', N'Adjustable office chair with lumbar support', N'Active');
-END;
-
-IF NOT EXISTS (SELECT 1 FROM dbo.product WHERE title = N'Minimalist Desk Lamp')
-BEGIN
-    INSERT INTO dbo.product (seller_id, title, description, status)
-    VALUES (@seller_id, N'Minimalist Desk Lamp', N'LED desk lamp with warm and cool light modes', N'Active');
-END;
-
-IF NOT EXISTS (SELECT 1 FROM dbo.product WHERE title = N'Ceramic Coffee Mug Set')
-BEGIN
-    INSERT INTO dbo.product (seller_id, title, description, status)
-    VALUES (@seller_id, N'Ceramic Coffee Mug Set', N'Set of 4 ceramic mugs for coffee or tea', N'Active');
-END;
-
-SELECT @phone_product_id = product_id
-FROM dbo.product
-WHERE title = N'Sample Phone X';
-
-SELECT @laptop_product_id = product_id
-FROM dbo.product
-WHERE title = N'Lightweight Laptop 13"';
-
-SELECT @headphone_product_id = product_id
-FROM dbo.product
-WHERE title = N'Noise-canceling Headphones';
-
-SELECT @watch_product_id = product_id
-FROM dbo.product
-WHERE title = N'Smart Fitness Watch';
-
-SELECT @backpack_product_id = product_id
-FROM dbo.product
-WHERE title = N'Urban Travel Backpack';
-
-SELECT @shoes_product_id = product_id
-FROM dbo.product
-WHERE title = N'Running Shoes Pro';
-
-SELECT @smart_speaker_product_id = product_id
-FROM dbo.product
-WHERE title = N'Smart Home Speaker';
-
-SELECT @gaming_monitor_product_id = product_id
-FROM dbo.product
-WHERE title = N'4K Gaming Monitor 27"';
-
-SELECT @earbuds_product_id = product_id
-FROM dbo.product
-WHERE title = N'Truly Wireless Earbuds';
-
-SELECT @tshirt_product_id = product_id
-FROM dbo.product
-WHERE title = N'Classic Cotton T-Shirt';
-
-SELECT @jacket_product_id = product_id
-FROM dbo.product
-WHERE title = N'Denim Jacket';
-
-SELECT @shorts_product_id = product_id
-FROM dbo.product
-WHERE title = N'Sport Running Shorts';
-
-SELECT @chair_product_id = product_id
-FROM dbo.product
-WHERE title = N'Ergonomic Office Chair';
-
-SELECT @lamp_product_id = product_id
-FROM dbo.product
-WHERE title = N'Minimalist Desk Lamp';
-
-SELECT @mug_product_id = product_id
-FROM dbo.product
-WHERE title = N'Ceramic Coffee Mug Set';
-
-IF @cat_electronics IS NOT NULL
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM dbo.product_category WHERE product_id = @phone_product_id AND category_id = @cat_electronics)
-        INSERT INTO dbo.product_category (product_id, category_id) VALUES (@phone_product_id, @cat_electronics);
-
-    IF NOT EXISTS (SELECT 1 FROM dbo.product_category WHERE product_id = @laptop_product_id AND category_id = @cat_electronics)
-        INSERT INTO dbo.product_category (product_id, category_id) VALUES (@laptop_product_id, @cat_electronics);
-
-    IF NOT EXISTS (SELECT 1 FROM dbo.product_category WHERE product_id = @headphone_product_id AND category_id = @cat_electronics)
-        INSERT INTO dbo.product_category (product_id, category_id) VALUES (@headphone_product_id, @cat_electronics);
-    IF NOT EXISTS (SELECT 1 FROM dbo.product_category WHERE product_id = @watch_product_id AND category_id = @cat_electronics)
-        INSERT INTO dbo.product_category (product_id, category_id) VALUES (@watch_product_id, @cat_electronics);
-
-    IF @smart_speaker_product_id IS NOT NULL
-       AND NOT EXISTS (SELECT 1 FROM dbo.product_category WHERE product_id = @smart_speaker_product_id AND category_id = @cat_electronics)
-        INSERT INTO dbo.product_category (product_id, category_id) VALUES (@smart_speaker_product_id, @cat_electronics);
-
-    IF @gaming_monitor_product_id IS NOT NULL
-       AND NOT EXISTS (SELECT 1 FROM dbo.product_category WHERE product_id = @gaming_monitor_product_id AND category_id = @cat_electronics)
-        INSERT INTO dbo.product_category (product_id, category_id) VALUES (@gaming_monitor_product_id, @cat_electronics);
-
-    IF @earbuds_product_id IS NOT NULL
-       AND NOT EXISTS (SELECT 1 FROM dbo.product_category WHERE product_id = @earbuds_product_id AND category_id = @cat_electronics)
-        INSERT INTO dbo.product_category (product_id, category_id) VALUES (@earbuds_product_id, @cat_electronics);
-END;
-
-IF @cat_fashion IS NOT NULL
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM dbo.product_category WHERE product_id = @backpack_product_id AND category_id = @cat_fashion)
-        INSERT INTO dbo.product_category (product_id, category_id) VALUES (@backpack_product_id, @cat_fashion);
-
-    IF NOT EXISTS (SELECT 1 FROM dbo.product_category WHERE product_id = @shoes_product_id AND category_id = @cat_fashion)
-        INSERT INTO dbo.product_category (product_id, category_id) VALUES (@shoes_product_id, @cat_fashion);
-
-    IF @tshirt_product_id IS NOT NULL
-       AND NOT EXISTS (SELECT 1 FROM dbo.product_category WHERE product_id = @tshirt_product_id AND category_id = @cat_fashion)
-        INSERT INTO dbo.product_category (product_id, category_id) VALUES (@tshirt_product_id, @cat_fashion);
-
-    IF @jacket_product_id IS NOT NULL
-       AND NOT EXISTS (SELECT 1 FROM dbo.product_category WHERE product_id = @jacket_product_id AND category_id = @cat_fashion)
-        INSERT INTO dbo.product_category (product_id, category_id) VALUES (@jacket_product_id, @cat_fashion);
-
-    IF @shorts_product_id IS NOT NULL
-       AND NOT EXISTS (SELECT 1 FROM dbo.product_category WHERE product_id = @shorts_product_id AND category_id = @cat_fashion)
-        INSERT INTO dbo.product_category (product_id, category_id) VALUES (@shorts_product_id, @cat_fashion);
-END;
-
-IF @cat_home_living IS NOT NULL
-BEGIN
-    IF @chair_product_id IS NOT NULL
-       AND NOT EXISTS (SELECT 1 FROM dbo.product_category WHERE product_id = @chair_product_id AND category_id = @cat_home_living)
-        INSERT INTO dbo.product_category (product_id, category_id) VALUES (@chair_product_id, @cat_home_living);
-
-    IF @lamp_product_id IS NOT NULL
-       AND NOT EXISTS (SELECT 1 FROM dbo.product_category WHERE product_id = @lamp_product_id AND category_id = @cat_home_living)
-        INSERT INTO dbo.product_category (product_id, category_id) VALUES (@lamp_product_id, @cat_home_living);
-
-    IF @mug_product_id IS NOT NULL
-       AND NOT EXISTS (SELECT 1 FROM dbo.product_category WHERE product_id = @mug_product_id AND category_id = @cat_home_living)
-        INSERT INTO dbo.product_category (product_id, category_id) VALUES (@mug_product_id, @cat_home_living);
-END;
-
-IF NOT EXISTS (SELECT 1 FROM dbo.product_variant WHERE product_id = @phone_product_id AND variant_code = N'DEFAULT')
-BEGIN
-    INSERT INTO dbo.product_variant (product_id, variant_code, sku, list_price, stock_qty, is_active)
-    VALUES (@phone_product_id, N'DEFAULT', N'SPX-001', 5990000, 20, 1);
-END;
-
-IF NOT EXISTS (SELECT 1 FROM dbo.product_variant WHERE product_id = @laptop_product_id AND variant_code = N'DEFAULT')
-BEGIN
-    INSERT INTO dbo.product_variant (product_id, variant_code, sku, list_price, stock_qty, is_active)
-    VALUES (@laptop_product_id, N'DEFAULT', N'LL13-001', 18990000, 10, 1);
-END;
-
-IF NOT EXISTS (SELECT 1 FROM dbo.product_variant WHERE product_id = @headphone_product_id AND variant_code = N'DEFAULT')
-BEGIN
-    INSERT INTO dbo.product_variant (product_id, variant_code, sku, list_price, stock_qty, is_active)
-    VALUES (@headphone_product_id, N'DEFAULT', N'NCH-001', 2990000, 30, 1);
-END;
-
-IF NOT EXISTS (SELECT 1 FROM dbo.product_variant WHERE product_id = @watch_product_id AND variant_code = N'DEFAULT')
-BEGIN
-    INSERT INTO dbo.product_variant (product_id, variant_code, sku, list_price, stock_qty, is_active)
-    VALUES (@watch_product_id, N'DEFAULT', N'SW-001', 1290000, 50, 1);
-END;
-
-IF NOT EXISTS (SELECT 1 FROM dbo.product_variant WHERE product_id = @backpack_product_id AND variant_code = N'DEFAULT')
-BEGIN
-    INSERT INTO dbo.product_variant (product_id, variant_code, sku, list_price, stock_qty, is_active)
-    VALUES (@backpack_product_id, N'DEFAULT', N'BP-001', 499000, 80, 1);
-END;
-
-IF NOT EXISTS (SELECT 1 FROM dbo.product_variant WHERE product_id = @shoes_product_id AND variant_code = N'DEFAULT')
-BEGIN
-    INSERT INTO dbo.product_variant (product_id, variant_code, sku, list_price, stock_qty, is_active)
-    VALUES (@shoes_product_id, N'DEFAULT', N'RS-001', 899000, 60, 1);
-END;
-
-IF NOT EXISTS (SELECT 1 FROM dbo.product_variant WHERE product_id = @smart_speaker_product_id AND variant_code = N'DEFAULT')
-BEGIN
-    INSERT INTO dbo.product_variant (product_id, variant_code, sku, list_price, stock_qty, is_active)
-    VALUES (@smart_speaker_product_id, N'DEFAULT', N'SHS-001', 1599000, 40, 1);
-END;
-
-IF NOT EXISTS (SELECT 1 FROM dbo.product_variant WHERE product_id = @gaming_monitor_product_id AND variant_code = N'DEFAULT')
-BEGIN
-    INSERT INTO dbo.product_variant (product_id, variant_code, sku, list_price, stock_qty, is_active)
-    VALUES (@gaming_monitor_product_id, N'DEFAULT', N'GKM27-001', 7990000, 15, 1);
-END;
-
-IF NOT EXISTS (SELECT 1 FROM dbo.product_variant WHERE product_id = @earbuds_product_id AND variant_code = N'DEFAULT')
-BEGIN
-    INSERT INTO dbo.product_variant (product_id, variant_code, sku, list_price, stock_qty, is_active)
-    VALUES (@earbuds_product_id, N'DEFAULT', N'EBD-001', 1290000, 70, 1);
-END;
-
-IF NOT EXISTS (SELECT 1 FROM dbo.product_variant WHERE product_id = @tshirt_product_id AND variant_code = N'DEFAULT')
-BEGIN
-    INSERT INTO dbo.product_variant (product_id, variant_code, sku, list_price, stock_qty, is_active)
-    VALUES (@tshirt_product_id, N'DEFAULT', N'CTS-001', 199000, 150, 1);
-END;
-
-IF NOT EXISTS (SELECT 1 FROM dbo.product_variant WHERE product_id = @jacket_product_id AND variant_code = N'DEFAULT')
-BEGIN
-    INSERT INTO dbo.product_variant (product_id, variant_code, sku, list_price, stock_qty, is_active)
-    VALUES (@jacket_product_id, N'DEFAULT', N'DJK-001', 699000, 60, 1);
-END;
-
-IF NOT EXISTS (SELECT 1 FROM dbo.product_variant WHERE product_id = @shorts_product_id AND variant_code = N'DEFAULT')
-BEGIN
-    INSERT INTO dbo.product_variant (product_id, variant_code, sku, list_price, stock_qty, is_active)
-    VALUES (@shorts_product_id, N'DEFAULT', N'SRS-001', 249000, 120, 1);
-END;
-
-IF NOT EXISTS (SELECT 1 FROM dbo.product_variant WHERE product_id = @chair_product_id AND variant_code = N'DEFAULT')
-BEGIN
-    INSERT INTO dbo.product_variant (product_id, variant_code, sku, list_price, stock_qty, is_active)
-    VALUES (@chair_product_id, N'DEFAULT', N'EOC-001', 2599000, 25, 1);
-END;
-
-IF NOT EXISTS (SELECT 1 FROM dbo.product_variant WHERE product_id = @lamp_product_id AND variant_code = N'DEFAULT')
-BEGIN
-    INSERT INTO dbo.product_variant (product_id, variant_code, sku, list_price, stock_qty, is_active)
-    VALUES (@lamp_product_id, N'DEFAULT', N'MDL-001', 399000, 80, 1);
-END;
-
-IF NOT EXISTS (SELECT 1 FROM dbo.product_variant WHERE product_id = @mug_product_id AND variant_code = N'DEFAULT')
-BEGIN
-    INSERT INTO dbo.product_variant (product_id, variant_code, sku, list_price, stock_qty, is_active)
-    VALUES (@mug_product_id, N'DEFAULT', N'CMG-001', 159000, 100, 1);
-END;
-
-IF NOT EXISTS (SELECT 1 FROM dbo.product_image WHERE product_id = @phone_product_id)
-BEGIN
-    INSERT INTO dbo.product_image (product_id, url, caption)
-    VALUES (@phone_product_id,
-            N'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=600',
-            N'Sample Phone X');
-END;
-
-IF NOT EXISTS (SELECT 1 FROM dbo.product_image WHERE product_id = @laptop_product_id)
-BEGIN
-    INSERT INTO dbo.product_image (product_id, url, caption)
-    VALUES (@laptop_product_id,
-            N'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=600',
-            N'Lightweight Laptop 13"');
-END;
-
-IF NOT EXISTS (SELECT 1 FROM dbo.product_image WHERE product_id = @headphone_product_id)
-BEGIN
-    INSERT INTO dbo.product_image (product_id, url, caption)
-    VALUES (@headphone_product_id,
-            N'https://images.unsplash.com/photo-1518443895914-6b0f0d6f58f2?w=600',
-            N'Noise-canceling Headphones');
-END;
-
-IF NOT EXISTS (SELECT 1 FROM dbo.product_image WHERE product_id = @watch_product_id)
-BEGIN
-    INSERT INTO dbo.product_image (product_id, url, caption)
-    VALUES (@watch_product_id,
-            N'https://images.unsplash.com/photo-1519744346363-dc63d49ca0f1?w=600',
-            N'Smart Fitness Watch');
-END;
-
-IF NOT EXISTS (SELECT 1 FROM dbo.product_image WHERE product_id = @backpack_product_id)
-BEGIN
-    INSERT INTO dbo.product_image (product_id, url, caption)
-    VALUES (@backpack_product_id,
-            N'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600',
-            N'Urban Travel Backpack');
-END;
-
-IF NOT EXISTS (SELECT 1 FROM dbo.product_image WHERE product_id = @shoes_product_id)
-BEGIN
-    INSERT INTO dbo.product_image (product_id, url, caption)
-    VALUES (@shoes_product_id,
-            N'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600',
-            N'Running Shoes Pro');
-END;
-
-IF @smart_speaker_product_id IS NOT NULL
-   AND NOT EXISTS (SELECT 1 FROM dbo.product_image WHERE product_id = @smart_speaker_product_id)
-BEGIN
-    INSERT INTO dbo.product_image (product_id, url, caption)
-    VALUES (@smart_speaker_product_id,
-            N'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=600',
-            N'Smart Home Speaker');
-END;
-
-IF @gaming_monitor_product_id IS NOT NULL
-   AND NOT EXISTS (SELECT 1 FROM dbo.product_image WHERE product_id = @gaming_monitor_product_id)
-BEGIN
-    INSERT INTO dbo.product_image (product_id, url, caption)
-    VALUES (@gaming_monitor_product_id,
-            N'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=600',
-            N'4K Gaming Monitor 27"');
-END;
-
-IF @earbuds_product_id IS NOT NULL
-   AND NOT EXISTS (SELECT 1 FROM dbo.product_image WHERE product_id = @earbuds_product_id)
-BEGIN
-    INSERT INTO dbo.product_image (product_id, url, caption)
-    VALUES (@earbuds_product_id,
-            N'https://images.unsplash.com/photo-1585386959984-a4155223f3f8?w=600',
-            N'Truly Wireless Earbuds');
-END;
-
-IF @tshirt_product_id IS NOT NULL
-   AND NOT EXISTS (SELECT 1 FROM dbo.product_image WHERE product_id = @tshirt_product_id)
-BEGIN
-    INSERT INTO dbo.product_image (product_id, url, caption)
-    VALUES (@tshirt_product_id,
-            N'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=600',
-            N'Classic Cotton T-Shirt');
-END;
-
-IF @jacket_product_id IS NOT NULL
-   AND NOT EXISTS (SELECT 1 FROM dbo.product_image WHERE product_id = @jacket_product_id)
-BEGIN
-    INSERT INTO dbo.product_image (product_id, url, caption)
-    VALUES (@jacket_product_id,
-            N'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=600',
-            N'Denim Jacket');
-END;
-
-IF @shorts_product_id IS NOT NULL
-   AND NOT EXISTS (SELECT 1 FROM dbo.product_image WHERE product_id = @shorts_product_id)
-BEGIN
-    INSERT INTO dbo.product_image (product_id, url, caption)
-    VALUES (@shorts_product_id,
-            N'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=600',
-            N'Sport Running Shorts');
-END;
-
-IF @chair_product_id IS NOT NULL
-   AND NOT EXISTS (SELECT 1 FROM dbo.product_image WHERE product_id = @chair_product_id)
-BEGIN
-    INSERT INTO dbo.product_image (product_id, url, caption)
-    VALUES (@chair_product_id,
-            N'https://images.unsplash.com/photo-1582719478171-2f2df9b3f4b0?w=600',
-            N'Ergonomic Office Chair');
-END;
-
-IF @lamp_product_id IS NOT NULL
-   AND NOT EXISTS (SELECT 1 FROM dbo.product_image WHERE product_id = @lamp_product_id)
-BEGIN
-    INSERT INTO dbo.product_image (product_id, url, caption)
-    VALUES (@lamp_product_id,
-            N'https://images.unsplash.com/photo-1519710164239-da123dc03ef4?w=600',
-            N'Minimalist Desk Lamp');
-END;
-
-IF @mug_product_id IS NOT NULL
-   AND NOT EXISTS (SELECT 1 FROM dbo.product_image WHERE product_id = @mug_product_id)
-BEGIN
-    INSERT INTO dbo.product_image (product_id, url, caption)
-    VALUES (@mug_product_id,
-            N'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=600',
-            N'Ceramic Coffee Mug Set');
-END;
-
--- BUYERS & ADDRESSES
-DECLARE @admin_user_id BIGINT;
-DECLARE @buyer1_id BIGINT;
-DECLARE @buyer2_id BIGINT;
-DECLARE @buyer3_id BIGINT;
-
-DECLARE @pwd NVARCHAR(255) = N'$2a$10$LEE5v5MMt0tgzp5vta8/zew6BhgDpfIwg7/9fKOEbrtZj8LfeJEkK';
-
--- ADMIN USER FOR MANAGEMENT / REPORTING
-IF NOT EXISTS (SELECT 1 FROM dbo.user_account WHERE email = N'admin1@demo.com')
-BEGIN
-    INSERT INTO dbo.user_account (email, password_hash, display_name, user_name, phone_number, date_of_birth)
-    VALUES (N'admin1@demo.com', @pwd, N'System Admin', N'admin1', N'+84900000001', '1985-01-01');
-END;
-
-SELECT @admin_user_id = user_id FROM dbo.user_account WHERE email = N'admin1@demo.com';
-
-IF NOT EXISTS (SELECT 1 FROM dbo.admin WHERE user_id = @admin_user_id)
-BEGIN
-    INSERT INTO dbo.admin (user_id, role) VALUES (@admin_user_id, N'SystemAdmin');
-END;
-
--- BUYER ACCOUNTS
-IF NOT EXISTS (SELECT 1 FROM dbo.user_account WHERE email = N'buyer1@demo.com')
-BEGIN
-    INSERT INTO dbo.user_account (email, password_hash, display_name, user_name, phone_number, date_of_birth)
-    VALUES (N'buyer1@demo.com', @pwd, N'Minh Nguyen', N'buyer1', N'+84911111111', '1992-02-02');
-END;
-
-IF NOT EXISTS (SELECT 1 FROM dbo.user_account WHERE email = N'buyer2@demo.com')
-BEGIN
-    INSERT INTO dbo.user_account (email, password_hash, display_name, user_name, phone_number, date_of_birth)
-    VALUES (N'buyer2@demo.com', @pwd, N'Lan Tran', N'buyer2', N'+84922222222', '1995-03-03');
-END;
-
-IF NOT EXISTS (SELECT 1 FROM dbo.user_account WHERE email = N'buyer3@demo.com')
-BEGIN
-    INSERT INTO dbo.user_account (email, password_hash, display_name, user_name, phone_number, date_of_birth)
-    VALUES (N'buyer3@demo.com', @pwd, N'Quang Le', N'buyer3', N'+84933333333', '1998-04-04');
-END;
-
-SELECT @buyer1_id = user_id FROM dbo.user_account WHERE email = N'buyer1@demo.com';
-SELECT @buyer2_id = user_id FROM dbo.user_account WHERE email = N'buyer2@demo.com';
-SELECT @buyer3_id = user_id FROM dbo.user_account WHERE email = N'buyer3@demo.com';
-
-IF NOT EXISTS (SELECT 1 FROM dbo.buyer WHERE user_id = @buyer1_id)
-    INSERT INTO dbo.buyer (user_id) VALUES (@buyer1_id);
-
-IF NOT EXISTS (SELECT 1 FROM dbo.buyer WHERE user_id = @buyer2_id)
-    INSERT INTO dbo.buyer (user_id) VALUES (@buyer2_id);
-
-IF NOT EXISTS (SELECT 1 FROM dbo.buyer WHERE user_id = @buyer3_id)
-    INSERT INTO dbo.buyer (user_id) VALUES (@buyer3_id);
-
-IF NOT EXISTS (SELECT 1 FROM dbo.address WHERE buyer_id = @buyer1_id AND is_default = 1)
-BEGIN
-    INSERT INTO dbo.address (buyer_id, recipient_name, phone, line1, city, country, postal_code, is_default)
-    VALUES (@buyer1_id, N'Minh Nguyen', N'+84911111111', N'123 Le Loi', N'Ho Chi Minh City', N'VN', N'700000', 1);
-END;
-
-IF NOT EXISTS (SELECT 1 FROM dbo.address WHERE buyer_id = @buyer2_id AND is_default = 1)
-BEGIN
-    INSERT INTO dbo.address (buyer_id, recipient_name, phone, line1, city, country, postal_code, is_default)
-    VALUES (@buyer2_id, N'Lan Tran', N'+84922222222', N'89 Nguyen Hue', N'Ho Chi Minh City', N'VN', N'700100', 1);
-END;
-
-IF NOT EXISTS (SELECT 1 FROM dbo.address WHERE buyer_id = @buyer3_id AND is_default = 1)
-BEGIN
-    INSERT INTO dbo.address (buyer_id, recipient_name, phone, line1, city, country, postal_code, is_default)
-    VALUES (@buyer3_id, N'Quang Le', N'+84933333333', N'45 Tran Hung Dao', N'Ha Noi', N'VN', N'100000', 1);
-END;
-
-IF NOT EXISTS (SELECT 1 FROM dbo.address WHERE seller_id = @seller_id AND is_default = 1)
-BEGIN
-    INSERT INTO dbo.address (seller_id, recipient_name, phone, line1, city, country, postal_code, is_default)
-    VALUES (@seller_id, N'Tech Store Warehouse', N'+84901111111', N'1 Tech Street', N'Ho Chi Minh City', N'VN', N'700000', 1);
-END;
-
--- ORDERS & ORDER ITEMS (DEMO)
-DECLARE @service_id SMALLINT;
-SELECT TOP (1) @service_id = service_id FROM dbo.shipping_service ORDER BY service_id ASC;
-
-DECLARE @ship_from BIGINT;
-SELECT TOP (1) @ship_from = address_id
-FROM dbo.address
-WHERE seller_id = @seller_id
-ORDER BY is_default DESC, address_id ASC;
-
-DECLARE @ship_to1 BIGINT;
-DECLARE @ship_to2 BIGINT;
-DECLARE @ship_to3 BIGINT;
-
-SELECT TOP (1) @ship_to1 = address_id
-FROM dbo.address
-WHERE buyer_id = @buyer1_id
-ORDER BY is_default DESC, address_id ASC;
-
-SELECT TOP (1) @ship_to2 = address_id
-FROM dbo.address
-WHERE buyer_id = @buyer2_id
-ORDER BY is_default DESC, address_id ASC;
-
-SELECT TOP (1) @ship_to3 = address_id
-FROM dbo.address
-WHERE buyer_id = @buyer3_id
-ORDER BY is_default DESC, address_id ASC;
-
-DECLARE @order1 BIGINT;
-DECLARE @order2 BIGINT;
-DECLARE @order3 BIGINT;
-DECLARE @order4 BIGINT;
-DECLARE @order5 BIGINT;
-
--- SAMPLE CARTS FOR EACH BUYER
-IF NOT EXISTS (SELECT 1 FROM dbo.cart WHERE buyer_id = @buyer1_id)
-BEGIN
-    INSERT INTO dbo.cart (buyer_id, status)
-    VALUES (@buyer1_id, N'Active');
-END;
-
-IF NOT EXISTS (SELECT 1 FROM dbo.cart WHERE buyer_id = @buyer2_id)
-BEGIN
-    INSERT INTO dbo.cart (buyer_id, status)
-    VALUES (@buyer2_id, N'CheckedOut');
-END;
-
-IF NOT EXISTS (SELECT 1 FROM dbo.cart WHERE buyer_id = @buyer3_id)
-BEGIN
-    INSERT INTO dbo.cart (buyer_id, status)
-    VALUES (@buyer3_id, N'Abandoned');
-END;
-
-DECLARE @cart1 BIGINT;
-DECLARE @cart2 BIGINT;
-DECLARE @cart3 BIGINT;
-
-SELECT TOP (1) @cart1 = cart_id FROM dbo.cart WHERE buyer_id = @buyer1_id ORDER BY created_at DESC;
-SELECT TOP (1) @cart2 = cart_id FROM dbo.cart WHERE buyer_id = @buyer2_id ORDER BY created_at DESC;
-SELECT TOP (1) @cart3 = cart_id FROM dbo.cart WHERE buyer_id = @buyer3_id ORDER BY created_at DESC;
-
-IF @cart1 IS NOT NULL AND @phone_product_id IS NOT NULL
-   AND NOT EXISTS (SELECT 1 FROM dbo.cart_item WHERE cart_id = @cart1 AND product_id = @phone_product_id)
-BEGIN
-    INSERT INTO dbo.cart_item (cart_id, product_id, variant_code, qty)
-    VALUES (@cart1, @phone_product_id, N'DEFAULT', 1);
-END;
-
-IF @cart2 IS NOT NULL AND @laptop_product_id IS NOT NULL
-   AND NOT EXISTS (SELECT 1 FROM dbo.cart_item WHERE cart_id = @cart2 AND product_id = @laptop_product_id)
-BEGIN
-    INSERT INTO dbo.cart_item (cart_id, product_id, variant_code, qty)
-    VALUES (@cart2, @laptop_product_id, N'DEFAULT', 1);
-END;
-
-IF @cart3 IS NOT NULL AND @headphone_product_id IS NOT NULL
-   AND NOT EXISTS (SELECT 1 FROM dbo.cart_item WHERE cart_id = @cart3 AND product_id = @headphone_product_id)
-BEGIN
-    INSERT INTO dbo.cart_item (cart_id, product_id, variant_code, qty)
-    VALUES (@cart3, @headphone_product_id, N'DEFAULT', 2);
-END;
-
-IF NOT EXISTS (SELECT 1 FROM dbo.orders WHERE buyer_id = @buyer1_id)
-BEGIN
-    INSERT INTO dbo.orders (buyer_id, ship_to_address_id, ship_from_address_id, service_id, shipping_fee, status, total_amount)
-    VALUES (@buyer1_id, @ship_to1, @ship_from, @service_id, 0, N'Completed', 0);
-
-    SET @order1 = SCOPE_IDENTITY();
-
-    INSERT INTO dbo.order_item (order_id, line_no, product_id, variant_code, qty, unit_price)
-    SELECT @order1, 1, @phone_product_id, N'DEFAULT', 1, v.list_price
-    FROM dbo.product_variant v
-    WHERE v.product_id = @phone_product_id AND v.variant_code = N'DEFAULT';
-END;
-
-IF NOT EXISTS (SELECT 1 FROM dbo.orders WHERE buyer_id = @buyer2_id)
-BEGIN
-    INSERT INTO dbo.orders (buyer_id, ship_to_address_id, ship_from_address_id, service_id, shipping_fee, status, total_amount)
-    VALUES (@buyer2_id, @ship_to2, @ship_from, @service_id, 50000, N'Paid', 0);
-
-    SET @order2 = SCOPE_IDENTITY();
-
-    INSERT INTO dbo.order_item (order_id, line_no, product_id, variant_code, qty, unit_price)
-    SELECT @order2, 1, @laptop_product_id, N'DEFAULT', 1, v.list_price
-    FROM dbo.product_variant v
-    WHERE v.product_id = @laptop_product_id AND v.variant_code = N'DEFAULT';
-
-    INSERT INTO dbo.order_item (order_id, line_no, product_id, variant_code, qty, unit_price)
-    SELECT @order2, 2, @headphone_product_id, N'DEFAULT', 2, v.list_price
-    FROM dbo.product_variant v
-    WHERE v.product_id = @headphone_product_id AND v.variant_code = N'DEFAULT';
-END;
-
-IF NOT EXISTS (SELECT 1 FROM dbo.orders WHERE buyer_id = @buyer3_id)
-BEGIN
-    INSERT INTO dbo.orders (buyer_id, ship_to_address_id, ship_from_address_id, service_id, shipping_fee, status, total_amount)
-    VALUES (@buyer3_id, @ship_to3, @ship_from, @service_id, 0, N'Shipped', 0);
-
-    SET @order3 = SCOPE_IDENTITY();
-
-    INSERT INTO dbo.order_item (order_id, line_no, product_id, variant_code, qty, unit_price)
-    SELECT @order3, 1, @phone_product_id, N'DEFAULT', 2, v.list_price
-    FROM dbo.product_variant v
-    WHERE v.product_id = @phone_product_id AND v.variant_code = N'DEFAULT';
-END;
-
--- Additional demo orders so seller dashboard has richer history
-IF @smart_speaker_product_id IS NOT NULL
-   AND NOT EXISTS (SELECT 1 FROM dbo.orders WHERE buyer_id = @buyer1_id AND status = N'Pending')
-BEGIN
-    INSERT INTO dbo.orders (buyer_id, ship_to_address_id, ship_from_address_id, service_id, shipping_fee, status, total_amount)
-    VALUES (@buyer1_id, @ship_to1, @ship_from, @service_id, 30000, N'Pending', 0);
-
-    SET @order4 = SCOPE_IDENTITY();
-
-    INSERT INTO dbo.order_item (order_id, line_no, product_id, variant_code, qty, unit_price)
-    SELECT @order4, 1, @smart_speaker_product_id, N'DEFAULT', 1, v.list_price
-    FROM dbo.product_variant v
-    WHERE v.product_id = @smart_speaker_product_id AND v.variant_code = N'DEFAULT';
-
-    IF @lamp_product_id IS NOT NULL
-    BEGIN
-        INSERT INTO dbo.order_item (order_id, line_no, product_id, variant_code, qty, unit_price)
-        SELECT @order4, 2, @lamp_product_id, N'DEFAULT', 1, v.list_price
-        FROM dbo.product_variant v
-        WHERE v.product_id = @lamp_product_id AND v.variant_code = N'DEFAULT';
-    END;
-END;
-
-IF @tshirt_product_id IS NOT NULL
-   AND NOT EXISTS (SELECT 1 FROM dbo.orders WHERE buyer_id = @buyer2_id AND status = N'Completed')
-BEGIN
-    INSERT INTO dbo.orders (buyer_id, ship_to_address_id, ship_from_address_id, service_id, shipping_fee, status, total_amount)
-    VALUES (@buyer2_id, @ship_to2, @ship_from, @service_id, 45000, N'Completed', 0);
-
-    SET @order5 = SCOPE_IDENTITY();
-
-    INSERT INTO dbo.order_item (order_id, line_no, product_id, variant_code, qty, unit_price)
-    SELECT @order5, 1, @tshirt_product_id, N'DEFAULT', 2, v.list_price
-    FROM dbo.product_variant v
-    WHERE v.product_id = @tshirt_product_id AND v.variant_code = N'DEFAULT';
-
-    IF @shoes_product_id IS NOT NULL
-    BEGIN
-        INSERT INTO dbo.order_item (order_id, line_no, product_id, variant_code, qty, unit_price)
-        SELECT @order5, 2, @shoes_product_id, N'DEFAULT', 1, v.list_price
-        FROM dbo.product_variant v
-        WHERE v.product_id = @shoes_product_id AND v.variant_code = N'DEFAULT';
-    END;
-END;
-
--- VOUCHERS AND THEIR RELATIONSHIPS
-DECLARE @voucher_all BIGINT;
-DECLARE @voucher_elec BIGINT;
-DECLARE @voucher_fashion BIGINT;
-
-IF NOT EXISTS (SELECT 1 FROM dbo.voucher WHERE code = N'WELCOME10')
-BEGIN
-    INSERT INTO dbo.voucher (code, title, start_at, end_at, discount_type, discount_value, min_order_value, stackable, max_uses_per_buyer)
-    VALUES (N'WELCOME10', N'Giảm 10% cho đơn đầu tiên', DATEADD(DAY, -7, SYSDATETIME()), DATEADD(DAY, 30, SYSDATETIME()),
-            N'Percent', 10, 0, 0, 1);
-END;
-
-IF NOT EXISTS (SELECT 1 FROM dbo.voucher WHERE code = N'ELEC50K')
-BEGIN
-    INSERT INTO dbo.voucher (code, title, start_at, end_at, discount_type, discount_value, min_order_value, stackable, max_uses_per_buyer)
-    VALUES (N'ELEC50K', N'Giảm 50K cho đơn điện tử từ 1M', DATEADD(DAY, -7, SYSDATETIME()), DATEADD(DAY, 60, SYSDATETIME()),
-            N'Fixed', 50000, 1000000, 1, 2);
-END;
-
-IF NOT EXISTS (SELECT 1 FROM dbo.voucher WHERE code = N'FASHION15')
-BEGIN
-    INSERT INTO dbo.voucher (code, title, start_at, end_at, discount_type, discount_value, min_order_value, stackable, max_uses_per_buyer)
-    VALUES (N'FASHION15', N'Giảm 15% cho thời trang', DATEADD(DAY, -7, SYSDATETIME()), DATEADD(DAY, 45, SYSDATETIME()),
-            N'Percent', 15, 300000, 1, 3);
-END;
-
-SELECT @voucher_all   = voucher_id FROM dbo.voucher WHERE code = N'WELCOME10';
-SELECT @voucher_elec  = voucher_id FROM dbo.voucher WHERE code = N'ELEC50K';
-SELECT @voucher_fashion = voucher_id FROM dbo.voucher WHERE code = N'FASHION15';
-
-IF @voucher_all IS NOT NULL AND @seller_id IS NOT NULL
-   AND NOT EXISTS (SELECT 1 FROM dbo.voucher_seller WHERE voucher_id = @voucher_all AND seller_id = @seller_id)
-BEGIN
-    INSERT INTO dbo.voucher_seller (voucher_id, seller_id) VALUES (@voucher_all, @seller_id);
-END;
-
-IF @voucher_elec IS NOT NULL AND @cat_electronics IS NOT NULL
-   AND NOT EXISTS (SELECT 1 FROM dbo.voucher_category WHERE voucher_id = @voucher_elec AND category_id = @cat_electronics)
-BEGIN
-    INSERT INTO dbo.voucher_category (voucher_id, category_id) VALUES (@voucher_elec, @cat_electronics);
-END;
-
-IF @voucher_fashion IS NOT NULL AND @cat_fashion IS NOT NULL
-   AND NOT EXISTS (SELECT 1 FROM dbo.voucher_category WHERE voucher_id = @voucher_fashion AND category_id = @cat_fashion)
-BEGIN
-    INSERT INTO dbo.voucher_category (voucher_id, category_id) VALUES (@voucher_fashion, @cat_fashion);
-END;
-
--- APPLY VOUCHERS TO SOME ORDERS
-IF @voucher_all IS NOT NULL AND @order1 IS NOT NULL
-   AND NOT EXISTS (SELECT 1 FROM dbo.order_voucher WHERE order_id = @order1 AND voucher_id = @voucher_all)
-BEGIN
-    INSERT INTO dbo.order_voucher (order_id, voucher_id, applied_amount)
-    VALUES (@order1, @voucher_all, 0); -- actual discount tính bằng function ở app layer
-END;
-
-IF @voucher_elec IS NOT NULL AND @order2 IS NOT NULL
-   AND NOT EXISTS (SELECT 1 FROM dbo.order_voucher WHERE order_id = @order2 AND voucher_id = @voucher_elec)
-BEGIN
-    INSERT INTO dbo.order_voucher (order_id, voucher_id, applied_amount)
-    VALUES (@order2, @voucher_elec, 50000);
-END;
-
--- SIMPLE REVIEWS FOR SOME ORDER ITEMS
-IF @order1 IS NOT NULL AND NOT EXISTS (SELECT 1 FROM dbo.review WHERE order_id = @order1 AND line_no = 1)
-BEGIN
-    INSERT INTO dbo.review (order_id, line_no, buyer_id, rating, content)
-    VALUES (@order1, 1, @buyer1_id, 5, N'Sản phẩm rất tốt, giao hàng nhanh.');
-END;
-
-IF @order2 IS NOT NULL AND NOT EXISTS (SELECT 1 FROM dbo.review WHERE order_id = @order2 AND line_no = 1)
-BEGIN
-    INSERT INTO dbo.review (order_id, line_no, buyer_id, rating, content)
-    VALUES (@order2, 1, @buyer2_id, 4, N'Laptop chạy mượt, pin ổn.');
-END;
-
-IF @order3 IS NOT NULL AND NOT EXISTS (SELECT 1 FROM dbo.review WHERE order_id = @order3 AND line_no = 1)
-BEGIN
-    INSERT INTO dbo.review (order_id, line_no, buyer_id, rating, content)
-    VALUES (@order3, 1, @buyer3_id, 4, N'Điện thoại đúng mô tả, chất lượng tốt.');
-END;
-
--- SHIPMENT RECORDS
-IF @order2 IS NOT NULL AND NOT EXISTS (SELECT 1 FROM dbo.shipment WHERE order_id = @order2)
-BEGIN
+      ('TECH50', 'Percentage', 10.00, 1000000, 200000, DATEADD(DAY, -30, SYSDATETIME()), DATEADD(DAY, 30, SYSDATETIME()), 100, 15, 'Active'),
+      ('FASHION20', 'Percentage', 20.00, 500000, 100000, DATEADD(DAY, -20, SYSDATETIME()), DATEADD(DAY, 40, SYSDATETIME()), 200, 45, 'Active'),
+      ('FREESHIP', 'Fixed', 30000, 200000, 30000, DATEADD(DAY, -15, SYSDATETIME()), DATEADD(DAY, 45, SYSDATETIME()), 500, 120, 'Active'),
+      ('NEWYEAR2025', 'Percentage', 15.00, 800000, 300000, DATEADD(DAY, -10, SYSDATETIME()), DATEADD(DAY, 60, SYSDATETIME()), 1000, 250, 'Active'),
+      ('WELCOME100', 'Fixed', 100000, 1500000, 100000, DATEADD(DAY, -5, SYSDATETIME()), DATEADD(DAY, 90, SYSDATETIME()), 50, 8, 'Active');
+END;
+GO
+
+-- 13. Carts
+DECLARE @b1 BIGINT, @b2 BIGINT, @b3 BIGINT;
+SELECT @b1 = user_id FROM dbo.user_account WHERE email = 'buyer1@demo.com';
+SELECT @b2 = user_id FROM dbo.user_account WHERE email = 'buyer2@demo.com';
+SELECT @b3 = user_id FROM dbo.user_account WHERE email = 'buyer3@demo.com';
+
+IF NOT EXISTS (SELECT 1 FROM dbo.cart WHERE buyer_id = @b1)
+    INSERT INTO dbo.cart (buyer_id, status, created_at) VALUES (@b1, 'Active', DATEADD(DAY, -2, SYSDATETIME()));
+
+IF NOT EXISTS (SELECT 1 FROM dbo.cart WHERE buyer_id = @b2)
+    INSERT INTO dbo.cart (buyer_id, status, created_at) VALUES (@b2, 'Active', DATEADD(DAY, -1, SYSDATETIME()));
+
+IF NOT EXISTS (SELECT 1 FROM dbo.cart WHERE buyer_id = @b3)
+    INSERT INTO dbo.cart (buyer_id, status, created_at) VALUES (@b3, 'Active', SYSDATETIME());
+
+-- Cart Items
+DECLARE @c1 BIGINT, @c2 BIGINT, @c3 BIGINT;
+SELECT @c1 = cart_id FROM dbo.cart WHERE buyer_id = @b1;
+SELECT @c2 = cart_id FROM dbo.cart WHERE buyer_id = @b2;
+SELECT @c3 = cart_id FROM dbo.cart WHERE buyer_id = @b3;
+
+DECLARE @p1 BIGINT, @p2 BIGINT, @p3 BIGINT, @p4 BIGINT;
+SELECT TOP 1 @p1 = product_id FROM dbo.product WHERE title LIKE 'iPad%';
+SELECT TOP 1 @p2 = product_id FROM dbo.product WHERE title LIKE 'Nike%';
+SELECT TOP 1 @p3 = product_id FROM dbo.product WHERE title LIKE 'IKEA%';
+SELECT TOP 1 @p4 = product_id FROM dbo.product WHERE title LIKE 'Yoga%';
+
+IF @c1 IS NOT NULL AND NOT EXISTS (SELECT 1 FROM dbo.cart_item WHERE cart_id = @c1)
+    INSERT INTO dbo.cart_item (cart_id, product_id, variant_code, qty, added_at)
+    VALUES (@c1, @p1, 'DEFAULT', 1, DATEADD(DAY, -2, SYSDATETIME()));
+
+IF @c2 IS NOT NULL AND NOT EXISTS (SELECT 1 FROM dbo.cart_item WHERE cart_id = @c2)
+    INSERT INTO dbo.cart_item (cart_id, product_id, variant_code, qty, added_at)
+    VALUES (@c2, @p2, 'DEFAULT', 1, DATEADD(DAY, -1, SYSDATETIME())),
+           (@c2, @p3, 'DEFAULT', 1, DATEADD(HOUR, -12, SYSDATETIME()));
+
+IF @c3 IS NOT NULL AND NOT EXISTS (SELECT 1 FROM dbo.cart_item WHERE cart_id = @c3)
+    INSERT INTO dbo.cart_item (cart_id, product_id, variant_code, qty, added_at)
+    VALUES (@c3, @p4, 'DEFAULT', 2, DATEADD(HOUR, -2, SYSDATETIME()));
+GO
+
+-- 14. Shipments
+DECLARE @oid1 BIGINT, @oid2 BIGINT, @oid3 BIGINT;
+DECLARE @b1 BIGINT, @b2 BIGINT, @b3 BIGINT;
+SELECT @b1 = user_id FROM dbo.user_account WHERE email = 'buyer1@demo.com';
+SELECT @b2 = user_id FROM dbo.user_account WHERE email = 'buyer2@demo.com';
+SELECT @b3 = user_id FROM dbo.user_account WHERE email = 'buyer3@demo.com';
+
+SELECT TOP 1 @oid1 = order_id FROM dbo.orders WHERE buyer_id = @b1 AND status = 'Completed';
+SELECT TOP 1 @oid2 = order_id FROM dbo.orders WHERE buyer_id = @b2 AND status = 'Paid';
+SELECT TOP 1 @oid3 = order_id FROM dbo.orders WHERE buyer_id = @b3 AND status = 'Shipped';
+
+IF @oid1 IS NOT NULL AND NOT EXISTS (SELECT 1 FROM dbo.shipment WHERE order_id = @oid1)
     INSERT INTO dbo.shipment (order_id, tracking_no, weight_kg, status, shipped_at, delivered_at)
-    VALUES (@order2, N'TRACK-0001', 2.5, N'Delivered', DATEADD(DAY, -3, SYSDATETIME()), DATEADD(DAY, -1, SYSDATETIME()));
-END;
+    VALUES (@oid1, 'VNP123456789VN', 0.5, 'Delivered', DATEADD(DAY, -15, SYSDATETIME()), DATEADD(DAY, -11, SYSDATETIME()));
 
-IF @order3 IS NOT NULL AND NOT EXISTS (SELECT 1 FROM dbo.shipment WHERE order_id = @order3)
-BEGIN
+IF @oid2 IS NOT NULL AND NOT EXISTS (SELECT 1 FROM dbo.shipment WHERE order_id = @oid2)
     INSERT INTO dbo.shipment (order_id, tracking_no, weight_kg, status, shipped_at, delivered_at)
-    VALUES (@order3, N'TRACK-0002', 1.2, N'Shipping', DATEADD(DAY, -1, SYSDATETIME()), NULL);
-END;
+    VALUES (@oid2, 'GHN987654321VN', 2.5, 'InTransit', DATEADD(DAY, -5, SYSDATETIME()), NULL);
 
-SET NOCOUNT OFF;
+IF @oid3 IS NOT NULL AND NOT EXISTS (SELECT 1 FROM dbo.shipment WHERE order_id = @oid3)
+    INSERT INTO dbo.shipment (order_id, tracking_no, weight_kg, status, shipped_at, delivered_at)
+    VALUES (@oid3, 'JT456789123VN', 1.2, 'InTransit', DATEADD(DAY, -3, SYSDATETIME()), NULL);
+GO
+
+PRINT 'Mockup data inserted successfully for MSSQL.';
 

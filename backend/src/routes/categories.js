@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../config/database');
 
-// Get all categories (new schema)
 router.get('/', async (req, res) => {
   try {
     const [rows] = await pool.execute(

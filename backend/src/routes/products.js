@@ -3,7 +3,6 @@ const router = express.Router();
 const { pool } = require('../config/database');
 const { authenticateToken, requireSellerOrAdmin } = require('../middleware/auth');
 
-// Get all products with pagination and filters  
 router.get('/', async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
@@ -19,7 +18,6 @@ router.get('/', async (req, res) => {
 
     const offset = (page - 1) * limit;
 
-    // Build base query for new schema
     const params = [];
     let where = `p.status = 'Active'`;
 
@@ -33,7 +31,6 @@ router.get('/', async (req, res) => {
       params.push(category);
     }
 
-    // Price filter uses variant list_price
     if (minPrice) {
       where += ' AND EXISTS (SELECT 1 FROM product_variant v WHERE v.product_id = p.product_id AND v.is_active = 1 AND v.list_price >= ?)';
       params.push(minPrice);
@@ -67,7 +64,6 @@ router.get('/', async (req, res) => {
     const [countRows] = await pool.execute(countSql, params);
     const total = countRows[0].total;
 
-    // Map to previous response shape where possible
     const products = rows.map(r => ({
       id: r.id,
       name: r.name,
@@ -95,7 +91,6 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Get featured products (define BEFORE dynamic :id route)
 router.get('/featured/list', async (req, res) => {
   try {
     const [rows] = await pool.execute(
@@ -125,12 +120,10 @@ router.get('/featured/list', async (req, res) => {
   }
 });
 
-// Get single product by ID with images and reviews
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Product core
     const [pRows] = await pool.execute(
       `SELECT p.product_id AS id, p.title AS name, p.description, p.created_at, p.status
        FROM product p WHERE p.product_id = ? AND p.status = 'Active'`,
@@ -141,21 +134,18 @@ router.get('/:id', async (req, res) => {
     }
     const product = pRows[0];
 
-    // Price and stock across variants
     const [metaRows] = await pool.execute(
       `SELECT MIN(list_price) AS min_price, MAX(list_price) AS max_price, SUM(stock_qty) AS total_stock
        FROM product_variant WHERE product_id = ? AND is_active = 1`,
       [id]
     );
 
-    // Images
     const [images] = await pool.execute(
       `SELECT url AS image_url, caption AS alt_text
        FROM product_image WHERE product_id = ? ORDER BY image_id ASC`,
       [id]
     );
 
-    // Categories
     const [cats] = await pool.execute(
       `SELECT c.category_id AS id, c.name
        FROM product_category pc JOIN category c ON c.category_id = pc.category_id
@@ -180,7 +170,5 @@ router.get('/:id', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch product' });
   }
 });
-
-// Keep other product routes below
 
 module.exports = router;

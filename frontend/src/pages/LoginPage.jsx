@@ -1,4 +1,3 @@
-// src/pages/LoginPage.jsx
 import React from "react";
 import { Link } from "react-router-dom";
 import LoginForm from "../components/auth/LoginForm";

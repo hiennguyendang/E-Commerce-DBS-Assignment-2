@@ -1,0 +1,63 @@
+VIETNAM NATIONAL UNIVERSITY - HO CHI MINH CITY
+HO CHI MINH CITY UNIVERSITY OF TECHNOLOGY
+FACULTY OF COMPUTER SCIENCE AND ENGINEERING
+DATABASE SYSTEMS - CO2013
+ASSIGNMENT 2
+DATABASE MANAGEMENT SYSTEM
+Author: BEng. Nguyen Minh Tam
+HO CHI MINH CITY, 10/2025
+HCMC UNIVERSITY OF TECHNOLOGY - VNU-HCM
+FACULTY OF COMPUTER SCIENCE AND ENGINEERING
+ASSIGNMENT’S SPECIFICATION
+Version 1.0
+1 Assignment’s Outcome
+Upon completion of this assignment, students will be able to:
+• Implement a relational database system using SQL.
+• Define and enforce integrity constraints to maintain data consistency.
+• Develop and execute stored procedures, functions, and triggers for automation and validation.
+• Build a simple application that connects to and interacts with a relational database.
+• Demonstrate integration between database programming and application logic.
+2 Introduction
+In this assignment, students will move from database design to database implementation. They will
+use SQL to create physical tables, enforce constraints, insert meaningful data, and develop database
+programs such as functions, stored procedures, and triggers. Finally, students will connect their
+database to a simple desktop or web-based application to demonstrate real interaction between an
+application layer and the database layer.
+This assignment focuses on practical database programming skills that are essential in real-world
+database system development.
+3 Assignment Overview
+This assignment is worth 15% of the overall course grade. All students must participate in all parts
+of the assignment. It consists of the following major parts:
+• Part 1: Create Database (3.5 points)
+• Part 2: Store Procedures, Functions, Triggers (3 points)
+• Part 3: Building Application (3.5 points)
+Database Systems - Semester 251 Page 1/5
+HCMC UNIVERSITY OF TECHNOLOGY - VNU-HCM
+FACULTY OF COMPUTER SCIENCE AND ENGINEERING
+4 Part 1: Create Database (3.5 points)
+4.1 Create Tables (2 points)
+Students must write DDL statements to create all tables in the database based on the relational schema
+and business description from Assignment 1.
+Notes:
+• Identify appropriate data types, data lengths, and constraints.
+• The database must include the following:
+– Primary Key and Auto Increment Primary Key.
+– Primary Key with given prefix and auto-incremental values (e.g., EMP001, EMP002, ...).
+– Foreign Key constraint.
+– Unique, NOT NULL, and DEFAULT constraints.
+– Row-based CHECK constraint related to one or two columns (e.g., Dnumber in [1, 20];
+check-in datetime must be earlier than check-out datetime).
+4.2 Insert Data (1.5 points)
+Insert data into all tables created. The data should be meaningful and realistic.
+Notes:
+• At least 3
+4 of the tables must contain four or more rows.
+• Prepare a SQL script that can be executed without errors to create and populate the complete
+database.
+5 Part 2: Store Procedures, Functions, and Triggers (3 points)
+5.1 Functions and Stored Procedures (2 points)
+Students must implement at least two functions and two stored procedures that perform queries,
+calculations, or operations relevant to the business topic.
+Notes:
+• Each function/procedure must specify input and output parameters in the report.
+Database Systems - Semester 251 Page 2/5

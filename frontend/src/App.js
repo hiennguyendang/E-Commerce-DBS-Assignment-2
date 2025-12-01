@@ -1,8 +1,6 @@
-// src/App.js
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
-// Layout & pages
 import AppLayout from "./components/layout/AppLayout";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
@@ -18,7 +16,6 @@ import { cartAPI, getAuthToken, getUser, clearAuthData } from "./utils/api";
 import Toast from "./components/common/Toast";
 
 export default function App() {
-  // Lấy user từ localStorage (nếu có phiên trước)
   const [user, setUser] = useState(() => {
     try {
       const token = getAuthToken();
@@ -29,10 +26,8 @@ export default function App() {
     }
   });
 
-  // Toast notification state
   const [toast, setToast] = useState(null);
 
-  // Hàm thêm vào giỏ (gọi API backend)
   const handleAddToCart = async (product) => {
     try {
       const qty = product.quantity || 1;
@@ -50,7 +45,6 @@ export default function App() {
     }
   };
 
-  // Hàm đăng xuất
   const handleLogout = () => {
     setUser(null);
     try {
@@ -58,11 +52,9 @@ export default function App() {
     } catch {}
   };
 
-  // Hàm xử lý login từ LoginForm
   const handleLogin = (userObj) => {
     console.log('Login successful, user:', userObj);
     setUser(userObj);
-    // localStorage đã được ghi trong LoginForm nhưng đảm bảo lại
     try {
       localStorage.setItem("user", JSON.stringify(userObj));
     } catch {}

@@ -6,7 +6,6 @@ const { pool } = require('../config/database');
 const { body, validationResult } = require('express-validator');
 const { authenticateToken } = require('../middleware/auth');
 
-// Register
 router.post('/register', [
   body('email').isEmail().withMessage('Please provide a valid email'),
   body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters long'),
@@ -25,7 +24,6 @@ router.post('/register', [
 
     const { email, password, firstName = '', lastName = '', phone = null, dateOfBirth } = req.body;
 
-    // Check if user already exists
     const [existing] = await connection.execute(
       'SELECT user_id FROM user_account WHERE email = ?',
       [email]
@@ -37,16 +35,13 @@ router.post('/register', [
 
     await connection.beginTransaction();
 
-    // Hash password
     const saltRounds = 12;
     const passwordHash = await bcrypt.hash(password, saltRounds);
 
-    // Derive display_name and user_name
     const displayName = `${firstName} ${lastName}`.trim() || email.split('@')[0];
     let userNameBase = email.split('@')[0].replace(/[^a-zA-Z0-9_\-]/g, '').slice(0, 30) || `user${Date.now()}`;
     let userName = userNameBase;
 
-    // Ensure unique user_name
     let suffix = 1;
     while (true) {
       const [u] = await connection.execute('SELECT 1 FROM user_account WHERE user_name = ?', [userName]);
@@ -56,7 +51,6 @@ router.post('/register', [
 
     const dob = dateOfBirth ? new Date(dateOfBirth) : new Date('1970-01-01');
 
-    // Insert user_account
     const [result] = await connection.execute(
       `INSERT INTO user_account (email, password_hash, display_name, user_name, phone_number, date_of_birth)
        VALUES (?, ?, ?, ?, ?, ?)`,
@@ -65,13 +59,11 @@ router.post('/register', [
 
     const userId = result.insertId;
 
-    // Make this user a buyer by default
     await connection.execute('INSERT INTO buyer (user_id) VALUES (?)', [userId]);
 
     await connection.commit();
     connection.release();
 
-    // Generate JWT token
     const token = jwt.sign(
       { id: userId, email, role: 'customer' },
       process.env.JWT_SECRET,
@@ -99,7 +91,6 @@ router.post('/register', [
   }
 });
 
-// Login
 router.post('/login', [
   body('email').isEmail().withMessage('Please provide a valid email'),
   body('password').notEmpty().withMessage('Password is required')
@@ -114,7 +105,6 @@ router.post('/login', [
 
     console.log('🔐 Login attempt:', { email, password: '***' });
 
-    // Find user in user_account
     const [users] = await pool.execute(
       `SELECT ua.user_id, ua.email, ua.password_hash, ua.display_name, ua.user_name, ua.phone_number,
               CASE WHEN a.user_id IS NOT NULL THEN 'admin'
@@ -143,7 +133,6 @@ router.post('/login', [
 
     const user = users[0];
 
-    // Verify password
     const isPasswordValid = await bcrypt.compare(password, user.password_hash);
     console.log('🔑 Password valid:', isPasswordValid);
     
@@ -151,14 +140,12 @@ router.post('/login', [
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
-    // Generate JWT token
     const token = jwt.sign(
       { id: user.user_id, email: user.email, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRE || '7d' }
     );
 
-    // Capitalize role for frontend compatibility
     const roleMap = {
       'admin': 'Admin',
       'seller': 'Seller',
@@ -183,7 +170,6 @@ router.post('/login', [
   }
 });
 
-// Get current user profile
 router.get('/profile', authenticateToken, async (req, res) => {
   try {
     res.json({

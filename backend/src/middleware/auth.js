@@ -1,7 +1,6 @@
 const jwt = require('jsonwebtoken');
 const { pool } = require('../config/database');
 
-// Helper: load user and derive role from new schema
 const loadUserWithRole = async (userId) => {
   const [rows] = await pool.execute(
     `SELECT 
@@ -25,7 +24,6 @@ const loadUserWithRole = async (userId) => {
   return rows[0];
 };
 
-// Middleware xác thực JWT token (new schema)
 const authenticateToken = async (req, res, next) => {
   try {
     const authHeader = req.headers['authorization'];
@@ -35,16 +33,13 @@ const authenticateToken = async (req, res, next) => {
       return res.status(401).json({ error: 'Access token is required' });
     }
 
-    // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // Load user
     const user = await loadUserWithRole(decoded.id);
     if (!user) {
       return res.status(401).json({ error: 'Invalid token - user not found' });
     }
 
-    // Normalize to previous shape when possible
     req.user = {
       id: user.user_id,
       email: user.email,
@@ -68,7 +63,6 @@ const authenticateToken = async (req, res, next) => {
   }
 };
 
-// Middleware kiểm tra role
 const requireRole = (...roles) => {
   return (req, res, next) => {
     if (!req.user) {
@@ -86,10 +80,8 @@ const requireRole = (...roles) => {
   };
 };
 
-// Middleware kiểm tra admin
 const requireAdmin = requireRole('admin');
 
-// Middleware kiểm tra seller hoặc admin
 const requireSellerOrAdmin = requireRole('seller', 'admin');
 
 module.exports = {

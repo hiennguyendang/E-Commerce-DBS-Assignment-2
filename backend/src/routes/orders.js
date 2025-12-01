@@ -4,7 +4,6 @@ const { pool } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
 const { body, validationResult } = require('express-validator');
 
-// Map status to Vietnamese labels expected by FE
 const vnStatus = (s) => {
   const map = {
     Pending: 'Đang xử lý',
@@ -18,7 +17,6 @@ const vnStatus = (s) => {
   return map[s] || s;
 };
 
-// GET /api/orders - return simple array for FE
 router.get('/', authenticateToken, async (req, res) => {
   try {
     const [rows] = await pool.execute(
@@ -46,7 +44,6 @@ router.get('/', authenticateToken, async (req, res) => {
 
 module.exports = router;
  
-// Helpers (shared with cart but re-defined here for isolation)
 async function ensureBuyerExists(connection, userId) {
   const [b] = await connection.execute('SELECT 1 FROM buyer WHERE user_id = ?', [userId]);
   if (b.length === 0) {
@@ -82,7 +79,6 @@ async function getOrCreateDefaultService(connection) {
   return ins.insertId;
 }
 
-// POST /api/orders - Create order from active cart
 router.post('/', [
   authenticateToken,
   body('shipping_address.recipient_name').notEmpty().withMessage('Recipient name is required'),
@@ -103,7 +99,6 @@ router.post('/', [
     const userId = req.user.id;
     await ensureBuyerExists(connection, userId);
 
-    // Load cart items
     const cartId = await getOrCreateActiveCart(connection, userId);
     const [items] = await connection.execute(
       `SELECT 
@@ -126,7 +121,6 @@ router.post('/', [
       return res.status(400).json({ error: 'Cart is empty' });
     }
 
-    // Compute totals
     let subtotal = 0;
     for (const it of items) {
       subtotal += Number(it.unit_price) * Number(it.qty);
@@ -134,10 +128,8 @@ router.post('/', [
     const shippingFee = subtotal > 500000 ? 0 : 50000;
     const totalAmount = subtotal + shippingFee;
 
-    // Ensure shipping service
     const serviceId = await getOrCreateDefaultService(connection);
 
-    // Create or reuse ship-to address for buyer
     const sa = req.body.shipping_address || {};
     const recipientName = sa.recipient_name || `${req.user.first_name || ''}`.trim() || 'Receiver';
     const phone = sa.phone || req.user.phone || '';
@@ -152,9 +144,7 @@ router.post('/', [
     );
     const shipToId = addrToIns.insertId;
 
-    // Ensure ship-from address for the first seller in items
-    const firstSellerId = items[0].seller_id; // e.g. 'SEL001'
-    // Try find existing address for seller
+    const firstSellerId = items[0].seller_id;
     let shipFromId = null;
     const [sellerAddr] = await connection.execute(
       `SELECT TOP (1) address_id 
@@ -166,7 +156,6 @@ router.post('/', [
     if (sellerAddr.length > 0) {
       shipFromId = sellerAddr[0].address_id;
     } else {
-      // Create a placeholder seller address
       const [insSellerAddr] = await connection.execute(
         `INSERT INTO address (seller_id, recipient_name, phone, line1, city, country, is_default)
          VALUES (?, ?, ?, ?, ?, 'VN', TRUE)`,
@@ -175,7 +164,6 @@ router.post('/', [
       shipFromId = insSellerAddr.insertId;
     }
 
-    // Create order
     const [orderIns] = await connection.execute(
       `INSERT INTO orders (buyer_id, ship_to_address_id, ship_from_address_id, service_id, shipping_fee, status, total_amount)
        VALUES (?, ?, ?, ?, ?, 'Pending', ?)`,
@@ -183,7 +171,6 @@ router.post('/', [
     );
     const orderId = orderIns.insertId;
 
-    // Insert order items
     let lineNo = 1;
     for (const it of items) {
       await connection.execute(
@@ -193,7 +180,6 @@ router.post('/', [
       );
     }
 
-    // Clear cart and set status
     await connection.execute(`DELETE FROM cart_item WHERE cart_id = ?`, [cartId]);
     await connection.execute(`UPDATE cart SET status = 'CheckedOut' WHERE cart_id = ?`, [cartId]);
 

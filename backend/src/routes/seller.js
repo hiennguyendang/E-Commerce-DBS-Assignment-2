@@ -4,7 +4,6 @@ const { body, validationResult } = require('express-validator');
 const { pool } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
 
-// Middleware kiểm tra role seller
 const requireSeller = (req, res, next) => {
   const role = req.user.role.toLowerCase();
   if (role !== 'seller' && role !== 'admin') {
@@ -13,7 +12,6 @@ const requireSeller = (req, res, next) => {
   next();
 };
 
-// GET /api/seller/shop - Lấy thông tin shop của seller
 router.get('/shop', authenticateToken, requireSeller, async (req, res) => {
   try {
     const [shops] = await pool.execute(
@@ -37,7 +35,6 @@ router.get('/shop', authenticateToken, requireSeller, async (req, res) => {
   }
 });
 
-// PUT /api/seller/shop - Cập nhật thông tin shop
 router.put('/shop', [
   authenticateToken,
   requireSeller,
@@ -67,10 +64,8 @@ router.put('/shop', [
   }
 });
 
-// GET /api/seller/products - Lấy tất cả sản phẩm của seller
 router.get('/products', authenticateToken, requireSeller, async (req, res) => {
   try {
-    // Get seller_id
     const [sellers] = await pool.execute(
       'SELECT seller_id FROM seller WHERE user_id = ?',
       [req.user.id]
@@ -106,12 +101,10 @@ router.get('/products', authenticateToken, requireSeller, async (req, res) => {
   }
 });
 
-// GET /api/seller/products/:id - Lấy chi tiết 1 sản phẩm
 router.get('/products/:id', authenticateToken, requireSeller, async (req, res) => {
   try {
     const productId = req.params.id;
 
-    // Lấy thông tin sản phẩm
     const [products] = await pool.execute(
       `SELECT p.*, 
               (SELECT JSON_ARRAYAGG(JSON_OBJECT(
@@ -137,7 +130,6 @@ router.get('/products/:id', authenticateToken, requireSeller, async (req, res) =
       return res.status(404).json({ error: 'Product not found' });
     }
 
-    // Lấy variants
     const [variants] = await pool.execute(
       `SELECT * FROM product_variant WHERE product_id = ? ORDER BY variant_id`,
       [productId]
@@ -153,7 +145,6 @@ router.get('/products/:id', authenticateToken, requireSeller, async (req, res) =
   }
 });
 
-// POST /api/seller/products - Tạo sản phẩm mới
 router.post('/products', [
   authenticateToken,
   requireSeller,
@@ -177,7 +168,6 @@ router.post('/products', [
 
     await connection.beginTransaction();
 
-    // Get seller_id from user_id
     const [sellers] = await connection.execute(
       'SELECT seller_id FROM seller WHERE user_id = ?',
       [req.user.id]
@@ -191,7 +181,6 @@ router.post('/products', [
 
     const sellerId = sellers[0].seller_id;
 
-    // 1. Tạo product - DB schema: seller_id, title, description, status
     const [productResult] = await connection.execute(
       `INSERT INTO product (seller_id, title, description, status)
        VALUES (?, ?, ?, 'Active')`,
@@ -200,7 +189,6 @@ router.post('/products', [
 
     const productId = productResult.insertId;
 
-    // 2. Thêm categories
     if (category_ids && category_ids.length > 0) {
       for (const categoryId of category_ids) {
         await connection.execute(
@@ -210,7 +198,6 @@ router.post('/products', [
       }
     }
 
-    // 3. Thêm variants - DB schema: product_id, variant_code (PK), sku (unique), list_price, stock_qty, is_active
     if (variants && variants.length > 0) {
       for (let i = 0; i < variants.length; i++) {
         const variant = variants[i];
@@ -224,7 +211,6 @@ router.post('/products', [
         );
       }
     } else {
-      // Nếu không có variant, tạo 1 variant mặc định
       await connection.execute(
         `INSERT INTO product_variant (product_id, variant_code, sku, list_price, stock_qty, is_active)
          VALUES (?, 'DEFAULT', ?, 0, 0, 1)`,
@@ -232,7 +218,6 @@ router.post('/products', [
       );
     }
 
-    // 4. Thêm images
     if (images && images.length > 0) {
       for (let i = 0; i < images.length; i++) {
         await connection.execute(
@@ -258,7 +243,6 @@ router.post('/products', [
   }
 });
 
-// PUT /api/seller/products/:id - Cập nhật sản phẩm
 router.put('/products/:id', [
   authenticateToken,
   requireSeller,
@@ -275,7 +259,6 @@ router.put('/products/:id', [
     const productId = req.params.id;
     const { product_name, description, is_active } = req.body;
 
-    // Kiểm tra quyền sở hữu
     const [products] = await pool.execute(
       `SELECT p.product_id
        FROM product p
@@ -307,12 +290,10 @@ router.put('/products/:id', [
   }
 });
 
-// DELETE /api/seller/products/:id - Xóa sản phẩm (soft delete)
 router.delete('/products/:id', authenticateToken, requireSeller, async (req, res) => {
   try {
     const productId = req.params.id;
 
-    // Kiểm tra quyền sở hữu
     const [products] = await pool.execute(
       `SELECT product_id FROM product WHERE product_id = ? AND seller_id = ?`,
       [productId, req.user.id]
@@ -322,7 +303,6 @@ router.delete('/products/:id', authenticateToken, requireSeller, async (req, res
       return res.status(404).json({ error: 'Product not found or access denied' });
     }
 
-    // Soft delete - set is_active = 0
     await pool.execute(
       `UPDATE product SET is_active = 0 WHERE product_id = ?`,
       [productId]
@@ -335,7 +315,6 @@ router.delete('/products/:id', authenticateToken, requireSeller, async (req, res
   }
 });
 
-// PUT /api/seller/products/:id/variants/:variantId - Cập nhật variant
 router.put('/products/:id/variants/:variantId', [
   authenticateToken,
   requireSeller,
@@ -351,7 +330,6 @@ router.put('/products/:id/variants/:variantId', [
     const { id: productId, variantId } = req.params;
     const { price, stock_quantity, variant_name } = req.body;
 
-    // Kiểm tra quyền sở hữu product
     const [products] = await pool.execute(
       `SELECT product_id FROM product WHERE product_id = ? AND seller_id = ?`,
       [productId, req.user.id]
@@ -377,12 +355,10 @@ router.put('/products/:id/variants/:variantId', [
   }
 });
 
-// GET /api/seller/orders - Lấy đơn hàng của shop
 router.get('/orders', authenticateToken, requireSeller, async (req, res) => {
   try {
     const { status } = req.query;
 
-    // Lấy seller_id từ user hiện tại
     const [sellers] = await pool.execute(
       'SELECT seller_id FROM seller WHERE user_id = ?',
       [req.user.id]
@@ -427,22 +403,18 @@ router.get('/orders', authenticateToken, requireSeller, async (req, res) => {
 
     res.json(orders);
   } catch (error) {
-    // eslint-disable-next-line no-console
     console.error('Get seller orders error:', error);
     res.status(500).json({ error: 'Failed to get orders' });
   }
 });
 
-// GET /api/seller/stats - Thống kê của seller
 router.get('/stats', authenticateToken, requireSeller, async (req, res) => {
   try {
-    // Tổng sản phẩm
     const [productCount] = await pool.execute(
       `SELECT COUNT(*) as total FROM product WHERE seller_id = ? AND is_active = 1`,
       [req.user.id]
     );
 
-    // Tổng đơn hàng
     const [orderCount] = await pool.execute(
       `SELECT COUNT(DISTINCT o.order_id) as total
        FROM \`order\` o
@@ -453,7 +425,6 @@ router.get('/stats', authenticateToken, requireSeller, async (req, res) => {
       [req.user.id]
     );
 
-    // Doanh thu
     const [revenue] = await pool.execute(
       `SELECT COALESCE(SUM(oi.quantity * oi.price), 0) as total
        FROM order_item oi
@@ -464,7 +435,6 @@ router.get('/stats', authenticateToken, requireSeller, async (req, res) => {
       [req.user.id]
     );
 
-    // Sản phẩm bán chạy
     const [topProducts] = await pool.execute(
       `SELECT p.product_name, SUM(oi.quantity) as total_sold
        FROM order_item oi

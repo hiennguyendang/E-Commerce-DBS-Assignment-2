@@ -3,10 +3,8 @@ const router = express.Router();
 const { pool } = require('../config/database');
 const { authenticateToken, requireSellerOrAdmin } = require('../middleware/auth');
 
-// GET /api/reports/seller/stats - use stored procedure sp_get_seller_stats
 router.get('/seller/stats', authenticateToken, requireSellerOrAdmin, async (req, res) => {
   try {
-    // Get seller_id from current user
     const [sellers] = await pool.execute(
       'SELECT seller_id FROM seller WHERE user_id = ?',
       [req.user.id]
@@ -18,7 +16,6 @@ router.get('/seller/stats', authenticateToken, requireSellerOrAdmin, async (req,
 
     const sellerId = sellers[0].seller_id;
 
-    // Call stored procedure sp_get_seller_stats (SQL Server)
     const [rows] = await pool.execute('EXEC dbo.sp_get_seller_stats ?', [sellerId]);
 
     const statsRow = Array.isArray(rows) && rows.length > 0 ? rows[0] : null;
@@ -30,7 +27,6 @@ router.get('/seller/stats', authenticateToken, requireSellerOrAdmin, async (req,
       revenue: Number(stats.revenue || 0),
     });
   } catch (error) {
-    // eslint-disable-next-line no-console
     console.error('Get seller stats via SP error:', error);
     res.status(500).json({ error: 'Failed to get statistics' });
   }
