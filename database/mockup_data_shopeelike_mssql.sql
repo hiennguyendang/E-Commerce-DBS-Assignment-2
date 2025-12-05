@@ -218,7 +218,19 @@ BEGIN
     (@s5, 'Hiking Backpack', '50L outdoor backpack', 'Active'),
     (@s5, 'Cycling Helmet', 'Safety bike helmet', 'Active'),
     (@s5, 'Swimming Goggles', 'Anti-fog swim goggles', 'Active'),
-    (@s5, 'Fitness Tracker', 'Smart activity band', 'Active');
+    (@s5, 'Fitness Tracker', 'Smart activity band', 'Active'),
+
+    -- Pet Supplies (demo, re-use Sports Pro seller)
+    (@s5, N'Thức ăn hạt cho chó lớn',          N'Hạt khô dinh dưỡng cho chó trưởng thành giống lớn', 'Active'),
+    (@s5, N'Thức ăn hạt cho mèo trưởng thành', N'Hạt khô cân bằng dinh dưỡng cho mèo nhà',           'Active'),
+    (@s5, N'Pate mèo vị cá ngừ',               N'Pate ướt cho mèo vị cá ngừ, giàu omega 3',          'Active'),
+    (@s5, N'Bánh thưởng huấn luyện cho chó',   N'Bánh thưởng mềm dành cho huấn luyện chó',           'Active'),
+    (@s5, N'Dây dắt chó bằng da',              N'Dây dắt chó bằng da thật, có tay cầm êm',           'Active'),
+    (@s5, N'Balo phi hành gia cho mèo',        N'Balo trong suốt mang mèo, có lỗ thoáng khí',        'Active'),
+    (@s5, N'Nhà vệ sinh mèo kín',              N'Nhà vệ sinh có nắp, giảm vương vãi cát',            'Active'),
+    (@s5, N'Cát vệ sinh cho mèo không bụi',    N'Cát vệ sinh vón cục, ít bụi, khử mùi tốt',          'Active'),
+    (@s5, N'Lồng vận chuyển thú cưng',         N'Lồng nhựa cứng, phù hợp chó mèo dưới 10kg',         'Active'),
+    (@s5, N'Đồ chơi chuột vải cho mèo',        N'Chuột vải có kèm catnip, kích thích vận động',      'Active');
 END;
 GO
 
@@ -284,6 +296,24 @@ BEGIN
         'Basketball', 'Soccer Ball', 'Badminton Set', 'Golf Clubs', 'Camping Tent',
         'Sleeping Bag', 'Hiking Backpack', 'Cycling Helmet', 'Swimming Goggles', 'Fitness Tracker'
     ) AND c.name = 'Sports & Outdoors';
+
+    -- Pet Supplies (demo products)
+    INSERT INTO dbo.product_category (product_id, category_id)
+    SELECT p.product_id, c.category_id
+    FROM dbo.product p
+    CROSS JOIN dbo.category c
+    WHERE p.title IN (
+        N'Thức ăn hạt cho chó lớn',
+        N'Thức ăn hạt cho mèo trưởng thành',
+        N'Pate mèo vị cá ngừ',
+        N'Bánh thưởng huấn luyện cho chó',
+        N'Dây dắt chó bằng da',
+        N'Balo phi hành gia cho mèo',
+        N'Nhà vệ sinh mèo kín',
+        N'Cát vệ sinh cho mèo không bụi',
+        N'Lồng vận chuyển thú cưng',
+        N'Đồ chơi chuột vải cho mèo'
+    ) AND c.name = 'Pet Supplies';
 END;
 GO
 
@@ -663,11 +693,11 @@ IF @oid1 IS NOT NULL AND NOT EXISTS (SELECT 1 FROM dbo.shipment WHERE order_id =
 
 IF @oid2 IS NOT NULL AND NOT EXISTS (SELECT 1 FROM dbo.shipment WHERE order_id = @oid2)
     INSERT INTO dbo.shipment (order_id, tracking_no, weight_kg, status, shipped_at, delivered_at)
-    VALUES (@oid2, 'GHN987654321VN', 2.5, 'InTransit', DATEADD(DAY, -5, SYSDATETIME()), NULL);
+    VALUES (@oid2, 'GHN987654321VN', 2.5, 'Shipping', DATEADD(DAY, -5, SYSDATETIME()), NULL);
 
 IF @oid3 IS NOT NULL AND NOT EXISTS (SELECT 1 FROM dbo.shipment WHERE order_id = @oid3)
     INSERT INTO dbo.shipment (order_id, tracking_no, weight_kg, status, shipped_at, delivered_at)
-    VALUES (@oid3, 'JT456789123VN', 1.2, 'InTransit', DATEADD(DAY, -3, SYSDATETIME()), NULL);
+    VALUES (@oid3, 'JT456789123VN', 1.2, 'Shipping', DATEADD(DAY, -3, SYSDATETIME()), NULL);
 GO
 
 PRINT 'Mockup data inserted successfully for MSSQL.';

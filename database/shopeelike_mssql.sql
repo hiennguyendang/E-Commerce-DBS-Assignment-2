@@ -618,3 +618,18 @@ BEGIN
     ) t ON t.order_id = o.order_id;
 END;
 GO
+
+-- Business rule: limit quantity per cart line to prevent unrealistic orders
+CREATE TRIGGER dbo.tr_cart_item_limit_qty
+ON dbo.cart_item
+AFTER INSERT, UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF EXISTS (SELECT 1 FROM inserted WHERE qty > 50)
+    BEGIN
+        THROW 50005, 'Cart item quantity cannot exceed 50 units.', 1;
+    END;
+END;
+GO

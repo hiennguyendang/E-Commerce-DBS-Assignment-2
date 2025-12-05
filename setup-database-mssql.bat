@@ -18,7 +18,7 @@ echo [2] Windows Authentication (Current User)
 set /p AUTH_CHOICE="Enter choice (1 or 2, default 1): "
 if "%AUTH_CHOICE%"=="" set AUTH_CHOICE=1
 
-if "%AUTH_CHOICE%"=="2" (
+if "%AUTH_CHOICE%"=="2" ( 
     set AUTH_FLAGS=-E
     echo Using Windows Authentication...
 ) else (

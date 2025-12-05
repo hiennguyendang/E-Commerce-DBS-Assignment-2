@@ -8,7 +8,6 @@ import HeroSection from "../components/layout/HeroSection";
 export default function HomePage({ onAddToCart }) {
   const [products, setProducts] = useState([]);
   const [filtered, setFiltered] = useState([]);
-  const [featured, setFeatured] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({ category: "", maxPrice: "" });
@@ -21,16 +20,15 @@ export default function HomePage({ onAddToCart }) {
       image: p.primary_image || p.image || "",
       rating: p.rating_average || 0,
       reviews: p.rating_count || 0,
-      category_id: p.category_id // Ensure we have category_id for filtering
+      category_id: p.category_id,
     }));
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [prodRes, catRes, featuredRes] = await Promise.all([
+        const [prodRes, catRes] = await Promise.all([
           axiosInstance.get("/products"),
           axiosInstance.get("/categories"),
-          axiosInstance.get("/products/featured/list"),
         ]);
 
         const list = Array.isArray(prodRes.data)
@@ -42,11 +40,6 @@ export default function HomePage({ onAddToCart }) {
         setProducts(mapped);
         setFiltered(mapped);
         setCategories(catRes.data || []);
-        setFeatured(
-          Array.isArray(featuredRes.data)
-            ? normalizeProducts(featuredRes.data)
-            : []
-        );
       } catch (err) {
         console.error("Không thể tải dữ liệu sản phẩm:", err);
       } finally {
@@ -93,6 +86,8 @@ export default function HomePage({ onAddToCart }) {
     return <Spinner message="Đang tải sản phẩm..." />;
   }
 
+  const hasFilter = !!(filters.category || filters.maxPrice);
+
   return (
     <>
       <HeroSection />
@@ -101,18 +96,12 @@ export default function HomePage({ onAddToCart }) {
           <ProductFilter categories={categories} onFilter={handleFilter} />
         </div>
         <div className="col-lg-9">
-          {featured.length > 0 && (
-            <div className="mb-4">
-              <h5 className="fw-bold mb-3">Gợi ý hôm nay cho bạn</h5>
-              <ProductList products={featured} onAddToCart={onAddToCart} />
-            </div>
-          )}
-
-          <h5 className="fw-bold mb-3">Tất cả sản phẩm</h5>
+          <h5 className="fw-bold mb-3">
+            {hasFilter ? "Kết quả lọc sản phẩm" : "Tất cả sản phẩm"}
+          </h5>
           <ProductList products={filtered} onAddToCart={onAddToCart} />
         </div>
       </div>
     </>
   );
 }
-

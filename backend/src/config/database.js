@@ -20,6 +20,8 @@ const dbConfig = {
 
 let poolPromise = null;
 
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 const getPool = () => {
   if (!poolPromise) {
     poolPromise = new sql.ConnectionPool(dbConfig)
@@ -151,11 +153,27 @@ const testConnection = async () => {
 };
 
 const initDatabase = async () => {
-  const isConnected = await testConnection();
-  if (!isConnected) {
-    console.error('Failed to connect to database. Please check your configuration.');
-    process.exit(1);
+  const maxRetries = parseInt(process.env.DB_INIT_MAX_RETRIES || '20', 10);
+  const delayMs = parseInt(process.env.DB_INIT_RETRY_DELAY_MS || '3000', 10);
+
+  for (let attempt = 1; attempt <= maxRetries; attempt += 1) {
+    const isConnected = await testConnection();
+    if (isConnected) {
+      return;
+    }
+
+    if (attempt < maxRetries) {
+      console.warn(
+        `Database not ready (attempt ${attempt}/${maxRetries}). Retrying in ${delayMs}ms...`
+      );
+      await sleep(delayMs);
+    }
   }
+
+  console.error(
+    'Failed to connect to database after multiple attempts. Please check your configuration.'
+  );
+  process.exit(1);
 };
 
 module.exports = {
@@ -163,4 +181,3 @@ module.exports = {
   testConnection,
   initDatabase,
 };
-
