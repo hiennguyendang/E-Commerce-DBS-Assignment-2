@@ -21,9 +21,10 @@ export default function ProductDetailPage({ onAddToCart }) {
           image,
           rating: p.rating_average || 0,
           reviews: p.rating_count || 0,
+          seller: p.seller || null,
         });
       } catch (err) {
-        console.error("Không thể tải sản phẩm:", err);
+        console.error("Failed to load product:", err);
       }
     }
     fetchProduct();
@@ -35,3 +36,4 @@ export default function ProductDetailPage({ onAddToCart }) {
     </div>
   );
 }
+

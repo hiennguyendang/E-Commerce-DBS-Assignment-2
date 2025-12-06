@@ -5,12 +5,19 @@ import ProductFilter from "../components/product/ProductFilter";
 import Spinner from "../components/common/Spinner";
 import HeroSection from "../components/layout/HeroSection";
 
+const PAGE_SIZE = 12;
+
 export default function HomePage({ onAddToCart }) {
   const [products, setProducts] = useState([]);
-  const [filtered, setFiltered] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({ category: "", maxPrice: "" });
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalProducts: 0,
+  });
 
   const normalizeProducts = (list) =>
     list.map((p) => ({
@@ -24,62 +31,86 @@ export default function HomePage({ onAddToCart }) {
     }));
 
   useEffect(() => {
-    const fetchData = async () => {
+    async function fetchCategories() {
       try {
-        const [prodRes, catRes] = await Promise.all([
-          axiosInstance.get("/products"),
-          axiosInstance.get("/categories"),
-        ]);
-
-        const list = Array.isArray(prodRes.data)
-          ? prodRes.data
-          : prodRes.data?.products || [];
-
-        const mapped = normalizeProducts(list);
-
-        setProducts(mapped);
-        setFiltered(mapped);
-        setCategories(catRes.data || []);
+        const res = await axiosInstance.get("/categories");
+        setCategories(res.data || []);
       } catch (err) {
-        console.error("Không thể tải dữ liệu sản phẩm:", err);
-      } finally {
-        setLoading(false);
+        console.error("Không thể tải danh mục:", err);
       }
-    };
+    }
 
-    fetchData();
+    fetchCategories();
   }, []);
 
   useEffect(() => {
-    const applyFilters = async () => {
-      if (!filters.category && !filters.maxPrice) {
-        if (products.length > 0) setFiltered(products);
-        return;
-      }
-
+    async function fetchProducts() {
       try {
-        const params = {};
+        setLoading(true);
+
+        const params = {
+          page,
+          limit: PAGE_SIZE,
+        };
+
         if (filters.category) {
           const cat = categories.find((c) => c.name === filters.category);
           if (cat) params.category = cat.id;
         }
-        if (filters.maxPrice) params.maxPrice = filters.maxPrice;
+
+        if (filters.maxPrice) {
+          params.maxPrice = filters.maxPrice;
+        }
 
         const res = await axiosInstance.get("/products", { params });
-        const list = res.data?.products || [];
-        setFiltered(normalizeProducts(list));
-      } catch (err) {
-        console.error("Filter error:", err);
-      }
-    };
+        const data = res.data || {};
 
-    if (products.length > 0) {
-      applyFilters();
+        const list = Array.isArray(data)
+          ? data
+          : Array.isArray(data.products)
+          ? data.products
+          : [];
+
+        setProducts(normalizeProducts(list));
+
+        if (data.pagination) {
+          setPagination({
+            currentPage: data.pagination.currentPage,
+            totalPages: data.pagination.totalPages,
+            totalProducts: data.pagination.totalProducts,
+          });
+        } else {
+          setPagination({
+            currentPage: page,
+            totalPages: 1,
+            totalProducts: list.length,
+          });
+        }
+      } catch (err) {
+        console.error("Không thể tải danh sách sản phẩm:", err);
+      } finally {
+        setLoading(false);
+      }
     }
-  }, [filters, categories, products]);
+
+    fetchProducts();
+  }, [filters, page, categories]);
 
   const handleFilter = (type, value) => {
     setFilters((prev) => ({ ...prev, [type]: value }));
+    setPage(1);
+  };
+
+  const handlePrevPage = () => {
+    if (pagination.currentPage > 1) {
+      setPage((p) => p - 1);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (pagination.currentPage < pagination.totalPages) {
+      setPage((p) => p + 1);
+    }
   };
 
   if (loading) {
@@ -99,9 +130,36 @@ export default function HomePage({ onAddToCart }) {
           <h5 className="fw-bold mb-3">
             {hasFilter ? "Kết quả lọc sản phẩm" : "Tất cả sản phẩm"}
           </h5>
-          <ProductList products={filtered} onAddToCart={onAddToCart} />
+
+          <ProductList products={products} onAddToCart={onAddToCart} />
+
+          {pagination.totalPages > 1 && (
+            <div className="d-flex justify-content-between align-items-center mt-4">
+              <div className="text-muted small">
+                Trang {pagination.currentPage}/{pagination.totalPages} •{" "}
+                {pagination.totalProducts} sản phẩm
+              </div>
+              <div>
+                <button
+                  className="btn btn-outline-secondary btn-sm me-2"
+                  onClick={handlePrevPage}
+                  disabled={pagination.currentPage <= 1}
+                >
+                  Trang trước
+                </button>
+                <button
+                  className="btn btn-outline-secondary btn-sm"
+                  onClick={handleNextPage}
+                  disabled={pagination.currentPage >= pagination.totalPages}
+                >
+                  Trang sau
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </>
   );
 }
+

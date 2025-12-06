@@ -1,5 +1,6 @@
 :root{
-  --color-primary: #ee4d2d;
+  /* Màu chủ đạo mới: xanh dương rất nhẹ */
+  --color-primary: #93c5fd;
 
   --site-max: 1440px;                 
   --site-pad: clamp(10px, 2vw, 22px); 
@@ -20,7 +21,9 @@ body{ font-family: 'Nunito', system-ui, -apple-system, Segoe UI, Roboto, Arial, 
 
 /* ===== Top bar ===== */
 .bk-topbar{
-  background: var(--bk-blue-700); color:#fff; border-bottom:4px solid #ffffff;
+  background: #ffffff;
+  color:#111827;
+  border-bottom:1px solid #e5e7eb;
 }
 .bk-topbar .inner{
   padding-block: 12px;             
@@ -63,7 +66,7 @@ body{ font-family: 'Nunito', system-ui, -apple-system, Segoe UI, Roboto, Arial, 
 
 /* ===== Footer ===== */
 .bk-footer{
-  background: var(--bk-blue-700); color:#fff; border-top:4px solid #ffffff;
+  background: #e5e7eb; color:#111827; border-top:1px solid #d1d5db;
 }
 .bk-footer .inner{
   padding-block: 10px;
@@ -421,13 +424,13 @@ input:focus, textarea:focus, select:focus, button:focus,
   padding: 18px;
 }
 .btn-bk {
-  background: #ee4d2d !important;
+  background: var(--color-primary) !important;
   color: #fff !important;
   border: none !important;
   transition: all 0.2s ease;
 }
 .btn-bk:hover {
-  background: #d73211 !important;
+  background: #f25b40 !important;
 }
 
 .bk-modal__backdrop {
@@ -446,12 +449,34 @@ main {
 }
 
 .bk-topbar {
-  background: #ee4d2d !important;
-  color: #fff !important;
+  background: #ffffff !important;
+  color: #111827 !important;
 }
 .bk-footer {
-  background: #ee4d2d !important;
-  color: #fff !important;
+  background: #e5e7eb !important;
+  color: #111827 !important;
+}
+
+/* Soften Bootstrap utility colors on dashboard cards */
+.card.bg-primary {
+  background-color: #e0f2fe !important;
+  color: #0f172a !important;
+}
+.card.bg-success {
+  background-color: #dcfce7 !important;
+  color: #0f172a !important;
+}
+.card.bg-info {
+  background-color: #e0f7fa !important;
+  color: #0f172a !important;
+}
+.card.bg-warning {
+  background-color: #fef9c3 !important;
+  color: #0f172a !important;
+}
+.card.bg-dark {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
 }
 
 .product-card {
@@ -480,14 +505,14 @@ body {
 
 /* Header Shopee */
 .login-header {
-  background: #ee4d2d;
+  background: var(--color-primary);
   color: #fff;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 /* Footer */
 .login-footer {
-  background: #ee4d2d;
+  background: var(--color-primary);
   color: #fff;
   font-size: 14px;
 }
@@ -510,7 +535,7 @@ body {
 
 /* Nút đăng nhập */
 .btn-bk {
-  background: #ee4d2d !important;
+  background: var(--color-primary) !important;
   color: #fff !important;
   font-weight: 700;
   border: none !important;
@@ -519,7 +544,7 @@ body {
   transition: all 0.2s ease;
 }
 .btn-bk:hover {
-  background: #d73211 !important;
+  background: #f25b40 !important;
 }
 
 /* Input form */
@@ -530,8 +555,8 @@ body {
   transition: 0.2s;
 }
 .login-card .form-control:focus {
-  border-color: #ee4d2d;
-  box-shadow: 0 0 0 2px rgba(238, 77, 45, 0.25);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(249, 115, 91, 0.25);
 }
 
 /* Register Page (kế thừa LoginPage) */

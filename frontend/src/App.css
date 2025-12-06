@@ -1,9 +1,7 @@
-/* App.css – Shopzada E-Commerce */
+/* App.css – lớp bổ sung cho theme Shopzada */
 
-/* Cấu trúc nền tổng thể */
 body {
   background-color: #f8fafc;
-  font-family: "Poppins", "Inter", sans-serif;
   color: #0f172a;
   margin: 0;
   padding: 0;
@@ -15,23 +13,22 @@ body {
   min-height: 100vh;
 }
 
-/* Các phần layout chính */
 main {
   flex: 1;
   background: #f8fafc;
 }
 
 .bk-topbar {
-  background: #ee4d2d !important;
-  color: #fff !important;
+  background: #ffffff !important;
+  color: #111827 !important;
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .bk-footer {
-  background: #ee4d2d !important;
-  color: #fff !important;
+  background: #e5e7eb !important;
+  color: #111827 !important;
 }
 
-/* Cải thiện UI */
 a {
   text-decoration: none;
   color: inherit;

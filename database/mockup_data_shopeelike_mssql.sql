@@ -115,6 +115,7 @@ BEGIN
     SELECT @s5 = seller_id FROM dbo.seller WHERE shop_name = 'Sports Pro';
 
     INSERT INTO dbo.product (seller_id, title, description, status) VALUES
+    -- Electronics
     (@s1, 'iPhone 15 Pro Max', 'Latest Apple flagship smartphone', 'Active'),
     (@s1, 'Samsung Galaxy S24 Ultra', 'Premium Android smartphone', 'Active'),
     (@s1, 'MacBook Pro M3 14"', 'Professional laptop for creators', 'Active'),
@@ -135,6 +136,18 @@ BEGIN
     (@s1, 'Samsung 65" QLED TV', 'Quantum dot display', 'Active'),
     (@s1, 'Bose SoundLink', 'Portable Bluetooth speaker', 'Active'),
     (@s1, 'Logitech MX Master 3S', 'Wireless productivity mouse', 'Active'),
+
+    -- Automotive (Tech Store)
+    (@s1, N'Camera hành trình Full HD',       N'Camera hành trình ghi lại hành trình lái xe, góc rộng, cảm biến ánh sáng tốt', 'Active'),
+    (@s1, N'Bộ thảm lót sàn ô tô 5D',         N'Bộ thảm lót sàn 5D chống bẩn, chống nước, vừa khít khoang xe',                'Active'),
+    (@s1, N'Bọc vô lăng da cao cấp',          N'Bọc vô lăng da may chắc chắn, cầm êm tay, chống trơn trượt',                  'Active'),
+    (@s1, N'Sạc nhanh ô tô 2 cổng USB-C',     N'Cốc sạc nhanh cho ô tô hỗ trợ sạc nhanh điện thoại, 2 cổng USB-C/USB-A',     'Active'),
+    (@s1, N'Giá đỡ điện thoại trên ô tô',     N'Giá kẹp điện thoại gắn cửa gió điều hòa, xoay 360°',                           'Active'),
+    (@s1, N'Máy lọc không khí trong xe hơi',  N'Máy lọc không khí mini loại bỏ bụi mịn và mùi khó chịu trong khoang xe',      'Active'),
+    (@s1, N'Nước hoa treo xe hương gỗ',       N'Nước hoa treo xe mùi gỗ thơm dịu, khử mùi trong xe',                           'Active'),
+    (@s1, N'Bơm lốp ô tô mini 12V',          N'Máy bơm lốp cầm tay cắm tẩu 12V, có đồng hồ đo áp suất',                      'Active'),
+    (@s1, N'Bạt phủ ô tô chống nắng',         N'Bạt phủ thân xe chống nắng, chống bụi, phù hợp xe 4–7 chỗ',                   'Active'),
+    (@s1, N'Bộ dung dịch vệ sinh nội thất',  N'Combo dung dịch vệ sinh taplo, ghế da và kính lái chuyên dụng',               'Active'),
     
     (@s2, 'Nike Air Max 270', 'Comfortable running shoes', 'Active'),
     (@s2, 'Adidas Ultraboost 23', 'Performance running shoes', 'Active'),
@@ -297,6 +310,24 @@ BEGIN
         'Sleeping Bag', 'Hiking Backpack', 'Cycling Helmet', 'Swimming Goggles', 'Fitness Tracker'
     ) AND c.name = 'Sports & Outdoors';
 
+    -- Automotive (demo products)
+    INSERT INTO dbo.product_category (product_id, category_id)
+    SELECT p.product_id, c.category_id
+    FROM dbo.product p
+    CROSS JOIN dbo.category c
+    WHERE p.title IN (
+        N'Camera hành trình Full HD',
+        N'Bộ thảm lót sàn ô tô 5D',
+        N'Bọc vô lăng da cao cấp',
+        N'Sạc nhanh ô tô 2 cổng USB-C',
+        N'Giá đỡ điện thoại trên ô tô',
+        N'Máy lọc không khí trong xe hơi',
+        N'Nước hoa treo xe hương gỗ',
+        N'Bơm lốp ô tô mini 12V',
+        N'Bạt phủ ô tô chống nắng',
+        N'Bộ dung dịch vệ sinh nội thất'
+    ) AND c.name = 'Automotive';
+
     -- Pet Supplies (demo products)
     INSERT INTO dbo.product_category (product_id, category_id)
     SELECT p.product_id, c.category_id
@@ -331,74 +362,155 @@ BEGIN
         1
     FROM dbo.product;
 
-    -- Insert images using pattern-based mapping (checked 200 OK); diverse fallbacks
-    DECLARE @imgMapping TABLE(pattern NVARCHAR(200), url NVARCHAR(255), priority INT);
-    INSERT INTO @imgMapping (pattern, url, priority)
-    VALUES
-      (N'%iPhone%',                       'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=600', 1),
-      (N'%Galaxy%',                       'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=600', 1),
-      (N'%Phone%',                        'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=600', 2),
-      (N'%MacBook%',                      'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=600', 1),
-      (N'%Laptop%',                       'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=600', 2),
-      (N'%iPad%',                         'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=600', 1),
-      (N'%Tablet%',                       'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=600', 2),
-      (N'%Headphone%',                    'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600', 1),
-      (N'%Earbuds%',                      'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600', 2),
-      (N'%AirPods%',                      'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600', 2),
-      (N'%Watch%',                        'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=600', 2),
-      (N'%Camera%',                       'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=600', 1),
-      (N'%Canon%',                        'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=600', 1),
-      (N'%Sony A%',                       'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=600', 1),
-      (N'%GoPro%',                        'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=600', 1),
-      (N'%DJI%',                          'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=600', 1),
-      (N'%PS5%',                          'https://images.unsplash.com/photo-1511389026070-a14ae610a1be?w=600', 1),
-      (N'%Xbox%',                         'https://images.unsplash.com/photo-1511389026070-a14ae610a1be?w=600', 1),
-      (N'%Nintendo%',                     'https://images.unsplash.com/photo-1511389026070-a14ae610a1be?w=600', 1),
-      (N'%TV%',                           'https://images.unsplash.com/photo-1503602642458-232111445657?w=600', 1),
-      (N'%Speaker%',                      'https://images.unsplash.com/photo-1503602642458-232111445657?w=600', 2),
-      (N'%Mouse%',                        'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=600', 2),
-      (N'%Backpack%',                     'https://images.unsplash.com/photo-1489515217757-5fd1be406fef?w=600', 1),
-      (N'%Bag%',                          'https://images.unsplash.com/photo-1489515217757-5fd1be406fef?w=600', 2),
-      (N'%T-Shirt%',                      'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=600', 1),
-      (N'%Jacket%',                       'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=600', 1),
-      (N'%Coat%',                         'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=600', 1),
-      (N'%Short%',                        'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=600', 1),
-      (N'%Shoes%',                        'https://images.unsplash.com/photo-1489515217757-5fd1be406fef?w=600', 1),
-      (N'%Sneaker%',                      'https://images.unsplash.com/photo-1489515217757-5fd1be406fef?w=600', 1),
-      (N'%Desk%',                         'https://images.unsplash.com/photo-1503602642458-232111445657?w=600', 1),
-      (N'%Chair%',                        'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=600', 1),
-      (N'%Lamp%',                         'https://images.unsplash.com/photo-1503602642458-232111445657?w=600', 1),
-      (N'%Mug%',                          'https://images.unsplash.com/photo-1495106245177-55dc6f43e83f?w=600', 1),
-      (N'%Book%',                         'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=600', 1),
-      (N'%Notebook%',                     'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=600', 2),
-      (N'%Pen%',                          'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=600', 2),
-      (N'%Yoga%',                         'https://images.unsplash.com/photo-1495106245177-55dc6f43e83f?w=600', 1),
-      (N'%Dumbbell%',                     'https://images.unsplash.com/photo-1495106245177-55dc6f43e83f?w=600', 1),
-      (N'%Resistance%',                   'https://images.unsplash.com/photo-1495106245177-55dc6f43e83f?w=600', 1),
-      (N'%Treadmill%',                    'https://images.unsplash.com/photo-1495106245177-55dc6f43e83f?w=600', 1),
-      (N'%Bike%',                         'https://images.unsplash.com/photo-1495106245177-55dc6f43e83f?w=600', 1),
-      (N'%Helmet%',                       'https://images.unsplash.com/photo-1495106245177-55dc6f43e83f?w=600', 1),
-      (N'%Tent%',                         'https://images.unsplash.com/photo-1495106245177-55dc6f43e83f?w=600', 1),
-      (N'%Sleeping Bag%',                 'https://images.unsplash.com/photo-1495106245177-55dc6f43e83f?w=600', 1),
-      (N'%Bottle%',                       'https://images.unsplash.com/photo-1495106245177-55dc6f43e83f?w=600', 1),
-      (N'%Basketball%',                   'https://images.unsplash.com/photo-1495106245177-55dc6f43e83f?w=600', 1),
-      (N'%Soccer%',                       'https://images.unsplash.com/photo-1495106245177-55dc6f43e83f?w=600', 1),
-      (N'%Badminton%',                    'https://images.unsplash.com/photo-1495106245177-55dc6f43e83f?w=600', 1),
-      (N'%Golf%',                         'https://images.unsplash.com/photo-1495106245177-55dc6f43e83f?w=600', 1),
-      (N'%Camping%',                      'https://images.unsplash.com/photo-1495106245177-55dc6f43e83f?w=600', 1);
+    -- 6b. Product Images - explicit mapping per product title (Unsplash)
+IF NOT EXISTS (SELECT 1 FROM dbo.product_image)
+BEGIN
+    DECLARE @img TABLE (title NVARCHAR(200), url NVARCHAR(255));
+
+    INSERT INTO @img (title, url) VALUES
+        -- Electronics (1-20)
+        (N'iPhone 15 Pro Max',              N'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=600'),
+        (N'Samsung Galaxy S24 Ultra',       N'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=600'),
+        (N'MacBook Pro M3 14"',             N'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=600'),
+        (N'Dell XPS 15',                    N'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=600'),
+        (N'iPad Air 11"',                   N'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=600'),
+        (N'Sony WH-1000XM5',                N'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600'),
+        (N'AirPods Pro 2',                  N'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600'),
+        (N'Apple Watch Series 9',           N'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=600'),
+        (N'Samsung Galaxy Watch 6',         N'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=600'),
+        (N'Canon EOS R6',                   N'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=600'),
+        (N'Sony A7 IV',                     N'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=600'),
+        (N'GoPro Hero 12',                  N'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=600'),
+        (N'DJI Mini 4 Pro',                 N'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=600'),
+        (N'PS5 Console',                    N'https://images.unsplash.com/photo-1511389026070-a14ae610a1be?w=600'),
+        (N'Xbox Series X',                  N'https://images.unsplash.com/photo-1511389026070-a14ae610a1be?w=600'),
+        (N'Nintendo Switch OLED',           N'https://images.unsplash.com/photo-1511389026070-a14ae610a1be?w=600'),
+        (N'LG 55" OLED TV',                 N'https://images.unsplash.com/photo-1503602642458-232111445657?w=600'),
+        (N'Samsung 65" QLED TV',            N'https://images.unsplash.com/photo-1503602642458-232111445657?w=600'),
+        (N'Bose SoundLink',                 N'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600'),
+        (N'Logitech MX Master 3S',          N'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=600'),
+
+        -- Fashion (21-40)
+        (N'Nike Air Max 270',               N'https://images.unsplash.com/photo-1489515217757-5fd1be406fef?w=600'),
+        (N'Adidas Ultraboost 23',           N'https://images.unsplash.com/photo-1489515217757-5fd1be406fef?w=600'),
+        (N'Levi''s 501 Jeans',              N'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=600'),
+        (N'Uniqlo Cotton T-Shirt',          N'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=600'),
+        (N'Zara Wool Coat',                 N'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=600'),
+        (N'H&M Dress',                      N'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=600'),
+        (N'Ralph Lauren Polo',              N'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=600'),
+        (N'Tommy Hilfiger Jacket',          N'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=600'),
+        (N'Converse Chuck Taylor',          N'https://images.unsplash.com/photo-1489515217757-5fd1be406fef?w=600'),
+        (N'Vans Old Skool',                 N'https://images.unsplash.com/photo-1489515217757-5fd1be406fef?w=600'),
+        (N'Ray-Ban Aviator',                N'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=600'),
+        (N'Casio G-Shock',                  N'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=600'),
+        (N'Michael Kors Bag',               N'https://images.unsplash.com/photo-1489515217757-5fd1be406fef?w=600'),
+        (N'Gucci Belt',                     N'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=600'),
+        (N'Nike Dri-FIT Shirt',             N'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=600'),
+        (N'Adidas Track Pants',             N'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=600'),
+        (N'Puma Hoodie',                    N'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=600'),
+        (N'The North Face Jacket',          N'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=600'),
+        (N'Columbia Fleece',                N'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=600'),
+        (N'Timberland Boots',               N'https://images.unsplash.com/photo-1489515217757-5fd1be406fef?w=600'),
+
+        -- Home & Living (41–60)
+        (N'IKEA Sofa Bed',                  N'https://images.unsplash.com/photo-1503602642458-232111445657?w=600'),
+        (N'Dining Table Set',               N'https://images.unsplash.com/photo-1503602642458-232111445657?w=600'),
+        (N'Queen Mattress',                 N'https://images.unsplash.com/photo-1503602642458-232111445657?w=600'),
+        (N'Office Chair',                   N'https://images.unsplash.com/photo-1503602642458-232111445657?w=600'),
+        (N'Bookshelf',                      N'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=600'),
+        (N'Table Lamp',                     N'https://images.unsplash.com/photo-1503602642458-232111445657?w=600'),
+        (N'Floor Lamp',                     N'https://images.unsplash.com/photo-1503602642458-232111445657?w=600'),
+        (N'Area Rug 5x7',                   N'https://images.unsplash.com/photo-1503602642458-232111445657?w=600'),
+        (N'Curtains Set',                   N'https://images.unsplash.com/photo-1503602642458-232111445657?w=600'),
+        (N'Wall Mirror',                    N'https://images.unsplash.com/photo-1503602642458-232111445657?w=600'),
+        (N'Plant Pot Set',                  N'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=600'),
+        (N'Throw Pillows',                  N'https://images.unsplash.com/photo-1503602642458-232111445657?w=600'),
+        (N'Coffee Table',                   N'https://images.unsplash.com/photo-1503602642458-232111445657?w=600'),
+        (N'TV Stand',                       N'https://images.unsplash.com/photo-1503602642458-232111445657?w=600'),
+        (N'Kitchen Cart',                   N'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=600'),
+        (N'Bar Stools Set',                 N'https://images.unsplash.com/photo-1503602642458-232111445657?w=600'),
+        (N'Nightstand',                     N'https://images.unsplash.com/photo-1503602642458-232111445657?w=600'),
+        (N'Wardrobe',                       N'https://images.unsplash.com/photo-1503602642458-232111445657?w=600'),
+        (N'Shoe Rack',                      N'https://images.unsplash.com/photo-1503602642458-232111445657?w=600'),
+        (N'Coat Rack',                      N'https://images.unsplash.com/photo-1503602642458-232111445657?w=600'),
+
+        -- Books & Stationery (61–80)
+        (N'Harry Potter Set',               N'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=600'),
+        (N'Atomic Habits',                  N'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=600'),
+        (N'The Alchemist',                  N'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=600'),
+        (N'1984',                           N'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=600'),
+        (N'Sapiens',                        N'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=600'),
+        (N'Educated',                       N'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=600'),
+        (N'The Hobbit',                     N'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=600'),
+        (N'Pride and Prejudice',            N'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=600'),
+        (N'To Kill a Mockingbird',          N'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=600'),
+        (N'Think and Grow Rich',            N'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=600'),
+        (N'Notebook Set',                   N'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=600'),
+        (N'Fountain Pen',                   N'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=600'),
+        (N'Pencil Case',                    N'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=600'),
+        (N'Highlighter Set',                N'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=600'),
+        (N'Sticky Notes',                   N'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=600'),
+        (N'Planner 2025',                   N'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=600'),
+        (N'Desk Organizer',                 N'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=600'),
+        (N'Stapler',                        N'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=600'),
+        (N'Paper Clips',                    N'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=600'),
+        (N'Binder Set',                     N'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=600'),
+
+        -- Sports & Outdoors (81–100)
+        (N'Yoga Mat',                       N'https://images.unsplash.com/photo-1495106245177-55dc6f43e83f?w=600'),
+        (N'Dumbbell Set',                   N'https://images.unsplash.com/photo-1495106245177-55dc6f43e83f?w=600'),
+        (N'Resistance Bands',               N'https://images.unsplash.com/photo-1495106245177-55dc6f43e83f?w=600'),
+        (N'Treadmill',                      N'https://images.unsplash.com/photo-1495106245177-55dc6f43e83f?w=600'),
+        (N'Exercise Bike',                  N'https://images.unsplash.com/photo-1495106245177-55dc6f43e83f?w=600'),
+        (N'Pull-up Bar',                    N'https://images.unsplash.com/photo-1495106245177-55dc6f43e83f?w=600'),
+        (N'Jump Rope',                      N'https://images.unsplash.com/photo-1495106245177-55dc6f43e83f?w=600'),
+        (N'Gym Bag',                        N'https://images.unsplash.com/photo-1495106245177-55dc6f43e83f?w=600'),
+        (N'Water Bottle',                   N'https://images.unsplash.com/photo-1495106245177-55dc6f43e83f?w=600'),
+        (N'Tennis Racket',                  N'https://images.unsplash.com/photo-1495106245177-55dc6f43e83f?w=600'),
+        (N'Basketball',                     N'https://images.unsplash.com/photo-1495106245177-55dc6f43e83f?w=600'),
+        (N'Soccer Ball',                    N'https://images.unsplash.com/photo-1495106245177-55dc6f43e83f?w=600'),
+        (N'Badminton Set',                  N'https://images.unsplash.com/photo-1495106245177-55dc6f43e83f?w=600'),
+        (N'Golf Clubs',                     N'https://images.unsplash.com/photo-1495106245177-55dc6f43e83f?w=600'),
+        (N'Camping Tent',                   N'https://images.unsplash.com/photo-1495106245177-55dc6f43e83f?w=600'),
+        (N'Sleeping Bag',                   N'https://images.unsplash.com/photo-1495106245177-55dc6f43e83f?w=600'),
+        (N'Hiking Backpack',                N'https://images.unsplash.com/photo-1495106245177-55dc6f43e83f?w=600'),
+        (N'Cycling Helmet',                 N'https://images.unsplash.com/photo-1495106245177-55dc6f43e83f?w=600'),
+        (N'Swimming Goggles',               N'https://images.unsplash.com/photo-1495106245177-55dc6f43e83f?w=600'),
+        (N'Fitness Tracker',                N'https://images.unsplash.com/photo-1495106245177-55dc6f43e83f?w=600'),
+
+        -- Automotive (101-110)
+        (N'Camera hành trình Full HD',       N'https://images.unsplash.com/photo-1503736334956-4c8f8e92946d?w=600'),
+        (N'Bộ thảm lót sàn ô tô 5D',         N'https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=600'),
+        (N'Bọc vô lăng da cao cấp',          N'https://images.unsplash.com/photo-1517673132405-a56a62b18caf?w=600'),
+        (N'Sạc nhanh ô tô 2 cổng USB-C',     N'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=600'),
+        (N'Giá đỡ điện thoại trên ô tô',     N'https://images.unsplash.com/photo-1518444028781-06e0e1b6c41b?w=600'),
+        (N'Máy lọc không khí trong xe hơi',  N'https://images.unsplash.com/photo-1487958449943-2429e8be8625?w=600'),
+        (N'Nước hoa treo xe hương gỗ',       N'https://images.unsplash.com/photo-1514311548101-4aa0b1c2c9f5?w=600'),
+        (N'Bơm lốp ô tô mini 12V',          N'https://images.unsplash.com/photo-1582719478250-cc53331634da?w=600'),
+        (N'Bạt phủ ô tô chống nắng',         N'https://images.unsplash.com/photo-1504215680853-026ed2a45def?w=600'),
+        (N'Bộ dung dịch vệ sinh nội thất',  N'https://images.unsplash.com/photo-1570294646112-27c7639a05de?w=600'),
+
+        -- Pet Supplies (111-120)
+        (N'Thức ăn hạt cho chó lớn',          N'https://images.unsplash.com/photo-1517849845537-4d257902454a?w=600'),
+        (N'Thức ăn hạt cho mèo trưởng thành', N'https://images.unsplash.com/photo-1517849845537-4d257902454a?w=600'),
+        (N'Pate mèo vị cá ngừ',               N'https://images.unsplash.com/photo-1517849845537-4d257902454a?w=600'),
+        (N'Bánh thưởng huấn luyện cho chó',   N'https://images.unsplash.com/photo-1517849845537-4d257902454a?w=600'),
+        (N'Dây dắt chó bằng da',              N'https://images.unsplash.com/photo-1517849845537-4d257902454a?w=600'),
+        (N'Balo phi hành gia cho mèo',        N'https://images.unsplash.com/photo-1517849845537-4d257902454a?w=600'),
+        (N'Nhà vệ sinh mèo kín',              N'https://images.unsplash.com/photo-1517849845537-4d257902454a?w=600'),
+        (N'Cát vệ sinh cho mèo không bụi',    N'https://images.unsplash.com/photo-1517849845537-4d257902454a?w=600'),
+        (N'Lồng vận chuyển thú cưng',         N'https://images.unsplash.com/photo-1517849845537-4d257902454a?w=600'),
+        (N'Đồ chơi chuột vải cho mèo',        N'https://images.unsplash.com/photo-1517849845537-4d257902454a?w=600');
 
     INSERT INTO dbo.product_image (product_id, url, caption)
     SELECT 
         p.product_id,
-        COALESCE(m.url, 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=600') AS url,
+        ISNULL(i.url, N'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=600') AS url, -- fallback nếu thiếu mapping
         p.title
     FROM dbo.product p
-    OUTER APPLY (
-        SELECT TOP 1 url
-        FROM @imgMapping im
-        WHERE p.title LIKE im.pattern
-        ORDER BY im.priority
-    ) m;
+    LEFT JOIN @img i
+        ON i.title = p.title;
+
 END;
 GO
 

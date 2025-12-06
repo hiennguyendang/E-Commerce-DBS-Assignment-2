@@ -6,9 +6,11 @@ import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import HomePage from "./pages/HomePage";
 import ProductDetailPage from "./pages/ProductDetailPage";
+import SellerShopPage from "./pages/SellerShopPage";
 import CartPage from "./pages/CartPage";
 import CheckoutPage from "./pages/CheckoutPage";
 import OrdersPage from "./pages/OrdersPage";
+import OrderDetailPage from "./pages/OrderDetailPage";
 import ProfilePage from "./pages/ProfilePage";
 import SellerDashboardPage from "./pages/SellerDashboardPage";
 import AdminDashboardPage from "./pages/AdminDashboardPage";
@@ -53,11 +55,8 @@ export default function App() {
   };
 
   const handleLogin = (userObj) => {
-    console.log('Login successful, user:', userObj);
+    console.log("Login successful, user:", userObj);
     setUser(userObj);
-    try {
-      localStorage.setItem("user", JSON.stringify(userObj));
-    } catch {}
   };
 
   return (
@@ -74,9 +73,11 @@ export default function App() {
           <Route path="/app" element={<AppLayout user={user} onLogout={handleLogout} />}>
             <Route index element={<HomePage onAddToCart={handleAddToCart} />} />
             <Route path="product/:id" element={<ProductDetailPage onAddToCart={handleAddToCart} />} />
+            <Route path="seller/:sellerId" element={<SellerShopPage onAddToCart={handleAddToCart} />} />
             <Route path="cart" element={<CartPage />} />
             <Route path="checkout" element={<CheckoutPage />} />
             <Route path="orders" element={<OrdersPage />} />
+            <Route path="orders/:id" element={<OrderDetailPage />} />
             <Route path="profile" element={<ProfilePage user={user} />} />
 
             {user.role === "Seller" && <Route path="seller" element={<SellerDashboardPage />} />}

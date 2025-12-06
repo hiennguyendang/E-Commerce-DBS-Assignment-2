@@ -1,27 +1,48 @@
 import React from "react";
 import { Trash } from "react-bootstrap-icons";
 
-export default function CartItem({ item, onQuantityChange, onRemove }) {
+export default function CartItem({
+  item,
+  isSelected,
+  onToggleSelected,
+  onQuantityChange,
+  onRemove,
+}) {
   const handleQuantityChange = (e) => {
     const newQty = parseInt(e.target.value, 10);
     if (newQty >= 1) onQuantityChange(item.id, newQty);
   };
 
+  const variantLabel =
+    !item.variant || item.variant === "DEFAULT" ? "Mặc định" : item.variant;
+
   return (
     <div className="d-flex align-items-center justify-content-between p-3 border-bottom bg-white rounded-3 shadow-sm mb-2">
-      {/* Ảnh sản phẩm */}
+      <div className="form-check me-3">
+        <input
+          className="form-check-input"
+          type="checkbox"
+          checked={isSelected}
+          onChange={onToggleSelected}
+        />
+      </div>
+
+      {/* Sản phẩm */}
       <div className="d-flex align-items-center" style={{ flex: "1" }}>
         <img
           src={item.image}
           alt={item.name}
-          style={{ width: "80px", height: "80px", borderRadius: "8px", objectFit: "cover" }}
+          style={{
+            width: "80px",
+            height: "80px",
+            borderRadius: "8px",
+            objectFit: "cover",
+          }}
           className="me-3"
         />
         <div>
           <h6 className="mb-1">{item.name}</h6>
-          <p className="text-muted small mb-0">
-            {item.variant || "Phiên bản mặc định"}
-          </p>
+          <p className="text-muted small mb-0">{variantLabel}</p>
         </div>
       </div>
 
@@ -51,3 +72,4 @@ export default function CartItem({ item, onQuantityChange, onRemove }) {
     </div>
   );
 }
+

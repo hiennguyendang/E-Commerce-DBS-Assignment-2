@@ -25,7 +25,7 @@ export default function SearchBar({ placeholder, onSearch }) {
       <button
         type="submit"
         className="btn text-white fw-bold"
-        style={{ background: "#ee4d2d", borderRadius: "50px" }}
+        style={{ background: "#2563eb", borderRadius: "50px" }}
       >
         <i className="bi bi-search"></i>
       </button>

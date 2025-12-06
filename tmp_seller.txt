@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import axiosInstance from "../utils/axiosConfig";
 import Button from "../components/common/Button";
 import Modal from "../components/common/Modal";
@@ -14,30 +13,14 @@ const EMPTY_FORM = {
 };
 
 const formatCurrency = (value) =>
-  Number(value || 0).toLocaleString("vi-VN") + " ₫";
+  Number(value || 0).toLocaleString("vi-VN") + "đ";
 
 const mapOrderStatus = (status) => {
   const map = {
     Pending: "Đang xử lý",
     Paid: "Đã thanh toán",
     Packing: "Đang đóng gói",
-    Shipped: "Đang gửi hàng",
-    Completed: "Hoàn thành",
-    Cancelled: "Đã hủy",
-    Refunded: "Hoàn tiền",
-  };
-  return map[status] || status;
-};
-
-const formatCurrencyVN = (value) =>
-  Number(value || 0).toLocaleString("vi-VN") + " ₫";
-
-const mapOrderStatusVN = (status) => {
-  const map = {
-    Pending: "Đang xử lý",
-    Paid: "Đã thanh toán",
-    Packing: "Đang đóng gói",
-    Shipped: "Đang giao",
+    Shipped: "Đã gửi hàng",
     Completed: "Hoàn thành",
     Cancelled: "Đã hủy",
     Refunded: "Hoàn tiền",
@@ -57,8 +40,6 @@ export default function SellerDashboardPage() {
   const [editingProduct, setEditingProduct] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
-
-  const navigate = useNavigate();
 
   useEffect(() => {
     loadDashboard();
@@ -101,13 +82,7 @@ export default function SellerDashboardPage() {
       title: product.product_name || product.title || "",
       description: product.description || "",
       category_ids: [],
-      variants: [
-        {
-          name: "Mặc định",
-          price: product.min_price || 0,
-          stock: product.total_stock || 0,
-        },
-      ],
+      variants: [{ name: "Mặc định", price: product.min_price || 0, stock: product.total_stock || 0 }],
       imagesText: "",
     });
     setShowModal(true);
@@ -262,7 +237,7 @@ export default function SellerDashboardPage() {
           <div className="card bg-warning text-white h-100">
             <div className="card-body text-center">
               <h5>Doanh thu</h5>
-              <h2>{formatCurrencyVN(safeStats.revenue)}</h2>
+              <h2>{formatCurrency(safeStats.revenue)}</h2>
             </div>
           </div>
         </div>
@@ -285,8 +260,8 @@ export default function SellerDashboardPage() {
         <Button label="+ Thêm sản phẩm mới" onClick={openCreateModal} />
       </div>
 
-      <div className="table-responsive bg-white rounded shadow-sm">
-        <table className="table table-hover mb-0 align-middle">
+      <div className="table-responsive bg-white rounded shadow-sm mb-4">
+        <table className="table table-hover mb-0">
           <thead className="table-light">
             <tr>
               <th>Hình ảnh</th>
@@ -302,61 +277,65 @@ export default function SellerDashboardPage() {
             {products.length === 0 ? (
               <tr>
                 <td colSpan="7" className="text-center py-4 text-muted">
-                  Chưa có sản phẩm nào.
+                  Chưa có sản phẩm nào. Hãy thêm sản phẩm đầu tiên!
                 </td>
               </tr>
             ) : (
               products.map((p) => (
                 <tr key={p.product_id}>
-                  <td style={{ width: "80px" }}>
-                    {p.image_url && (
-                      <img
-                        src={p.image_url}
-                        alt={p.title}
-                        style={{
-                          width: "60px",
-                          height: "60px",
-                          objectFit: "cover",
-                          borderRadius: "8px",
-                        }}
-                      />
+                  <td>
+                    <img
+                      src={
+                        p.image_url || "https://via.placeholder.com/80?text=No+Image"
+                      }
+                      alt={p.product_name || p.title}
+                      style={{
+                        width: "80px",
+                        height: "80px",
+                        objectFit: "cover",
+                      }}
+                      className="rounded"
+                    />
+                  </td>
+                  <td>
+                    <strong>{p.product_name || p.title}</strong>
+                    {p.description && (
+                      <>
+                        <br />
+                        <small className="text-muted">
+                          {p.description.substring(0, 60)}
+                          {p.description.length > 60 ? "..." : ""}
+                        </small>
+                      </>
                     )}
                   </td>
                   <td>
-                    <div className="fw-semibold">{p.title}</div>
-                    <div className="text-muted small">
-                      Tạo lúc:{" "}
-                      {p.created_at
-                        ? new Date(p.created_at).toLocaleDateString("vi-VN")
-                        : ""}
-                    </div>
-                  </td>
-                  <td>
                     {p.min_price === p.max_price
-                      ? formatCurrencyVN(p.min_price)
-                      : `${formatCurrencyVN(p.min_price)} - ${formatCurrencyVN(
+                      ? formatCurrency(p.min_price)
+                      : `${formatCurrency(p.min_price)} - ${formatCurrency(
                           p.max_price
                         )}`}
                   </td>
                   <td>{p.total_stock || 0}</td>
-                  <td>{p.variant_count || 0}</td>
                   <td>
-                    <span
-                      className={`badge bg-${
-                        p.status === "Active" ? "success" : "secondary"
-                      }`}
-                    >
-                      {p.status === "Active" ? "Đang bán" : "Ẩn"}
+                    <span className="badge bg-secondary">
+                      {p.variant_count || 0} biến thể
                     </span>
                   </td>
                   <td>
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-outline-info me-1"
-                      onClick={() => navigate(`/app/product/${p.product_id}`)}
+                    <span
+                      className={`badge ${
+                        p.status === "Active"
+                          ? "bg-success"
+                          : p.status === "Hidden"
+                          ? "bg-secondary"
+                          : "bg-danger"
+                      }`}
                     >
-                      <i className="bi bi-eye" />
-                    </button>
+                      {p.status}
+                    </span>
+                  </td>
+                  <td>
                     <button
                       type="button"
                       className="btn btn-sm btn-outline-secondary me-1"
@@ -371,6 +350,7 @@ export default function SellerDashboardPage() {
                     >
                       <i className="bi bi-pencil" />
                     </button>
+                    {/* Có thể thêm nút xóa cứng nếu cần trong tương lai */}
                   </td>
                 </tr>
               ))
@@ -396,13 +376,12 @@ export default function SellerDashboardPage() {
                 <th>Tổng tiền</th>
                 <th>Trạng thái</th>
                 <th>Ngày tạo</th>
-                <th>Thao tác</th>
               </tr>
             </thead>
             <tbody>
               {orders.length === 0 ? (
                 <tr>
-                  <td colSpan="8" className="text-center py-4 text-muted">
+                  <td colSpan="7" className="text-center py-4 text-muted">
                     Chưa có đơn hàng nào cho shop này.
                   </td>
                 </tr>
@@ -413,21 +392,12 @@ export default function SellerDashboardPage() {
                     <td>{o.customer_name}</td>
                     <td>{o.customer_email}</td>
                     <td>{o.item_count}</td>
-                    <td>{formatCurrencyVN(o.total_amount)}</td>
-                    <td>{mapOrderStatusVN(o.order_status)}</td>
+                    <td>{formatCurrency(o.total_amount)}</td>
+                    <td>{mapOrderStatus(o.order_status)}</td>
                     <td>
                       {o.created_at
                         ? new Date(o.created_at).toLocaleString("vi-VN")
                         : ""}
-                    </td>
-                    <td>
-                      <button
-                        type="button"
-                        className="btn btn-sm btn-outline-info"
-                        onClick={() => navigate(`/app/orders/${o.order_id}`)}
-                      >
-                        Xem chi tiết
-                      </button>
                     </td>
                   </tr>
                 ))
@@ -451,7 +421,9 @@ export default function SellerDashboardPage() {
               type="text"
               className="form-control"
               value={form.title}
-              onChange={(e) => setForm({ ...form, title: e.target.value })}
+              onChange={(e) =>
+                setForm({ ...form, title: e.target.value })
+              }
               required
             />
           </div>
@@ -496,7 +468,9 @@ export default function SellerDashboardPage() {
           {!editingProduct && (
             <div className="mb-3">
               <div className="d-flex justify-content-between align-items-center mb-2">
-                <label className="form-label mb-0">Biến thể sản phẩm</label>
+                <label className="form-label mb-0">
+                  Biến thể sản phẩm
+                </label>
                 <button
                   type="button"
                   className="btn btn-sm btn-secondary"
@@ -519,10 +493,14 @@ export default function SellerDashboardPage() {
                       <input
                         type="text"
                         className="form-control form-control-sm"
-                        placeholder="VD: Màu đen, Size M"
+                        placeholder="Ví dụ: Màu đen, Size M"
                         value={v.name}
                         onChange={(e) =>
-                          handleVariantChange(index, "name", e.target.value)
+                          handleVariantChange(
+                            index,
+                            "name",
+                            e.target.value
+                          )
                         }
                       />
                     </div>
@@ -537,7 +515,11 @@ export default function SellerDashboardPage() {
                         min="0"
                         required
                         onChange={(e) =>
-                          handleVariantChange(index, "price", e.target.value)
+                          handleVariantChange(
+                            index,
+                            "price",
+                            e.target.value
+                          )
                         }
                       />
                     </div>
@@ -552,7 +534,11 @@ export default function SellerDashboardPage() {
                         min="0"
                         required
                         onChange={(e) =>
-                          handleVariantChange(index, "stock", e.target.value)
+                          handleVariantChange(
+                            index,
+                            "stock",
+                            e.target.value
+                          )
                         }
                       />
                     </div>
@@ -595,11 +581,7 @@ export default function SellerDashboardPage() {
               className="btn btn-primary flex-fill"
               disabled={saving}
             >
-              {saving
-                ? "Đang lưu..."
-                : editingProduct
-                ? "Cập nhật"
-                : "Tạo sản phẩm"}
+              {saving ? "Đang lưu..." : editingProduct ? "Cập nhật" : "Tạo sản phẩm"}
             </button>
             <button
               type="button"

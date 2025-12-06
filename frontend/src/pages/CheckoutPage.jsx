@@ -1,55 +1,127 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import Button from '../components/common/Button';
-import Modal from '../components/common/Modal';
-import Spinner from '../components/common/Spinner';
-import axiosInstance from '../utils/axiosConfig';
+import React, { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import Button from "../components/common/Button";
+import Modal from "../components/common/Modal";
+import Spinner from "../components/common/Spinner";
+import { ordersAPI } from "../utils/api";
+
+// Danh sach tinh/thanh (khong dau de tranh loi UTF-8)
+const VN_CITIES = [
+  "Ho Chi Minh",
+  "Ha Noi",
+  "Da Nang",
+  "Hai Phong",
+  "Can Tho",
+  "An Giang",
+  "Ba Ria - Vung Tau",
+  "Bac Giang",
+  "Bac Kan",
+  "Bac Lieu",
+  "Bac Ninh",
+  "Ben Tre",
+  "Binh Dinh",
+  "Binh Duong",
+  "Binh Phuoc",
+  "Binh Thuan",
+  "Ca Mau",
+  "Cao Bang",
+  "Dak Lak",
+  "Dak Nong",
+  "Dien Bien",
+  "Dong Nai",
+  "Dong Thap",
+  "Gia Lai",
+  "Ha Giang",
+  "Ha Nam",
+  "Ha Tinh",
+  "Hai Duong",
+  "Hau Giang",
+  "Hoa Binh",
+  "Hung Yen",
+  "Khanh Hoa",
+  "Kien Giang",
+  "Kon Tum",
+  "Lai Chau",
+  "Lam Dong",
+  "Lang Son",
+  "Lao Cai",
+  "Long An",
+  "Nam Dinh",
+  "Nghe An",
+  "Ninh Binh",
+  "Ninh Thuan",
+  "Phu Tho",
+  "Phu Yen",
+  "Quang Binh",
+  "Quang Nam",
+  "Quang Ngai",
+  "Quang Ninh",
+  "Quang Tri",
+  "Soc Trang",
+  "Son La",
+  "Tay Ninh",
+  "Thai Binh",
+  "Thai Nguyen",
+  "Thanh Hoa",
+  "Thua Thien Hue",
+  "Tien Giang",
+  "Tra Vinh",
+  "Tuyen Quang",
+  "Vinh Long",
+  "Vinh Phuc",
+  "Yen Bai",
+];
 
 export default function CheckoutPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState({
-    recipient_name: '',
-    address: '',
-    phone: '',
-    city: 'Hồ Chí Minh',
-    postal_code: '',
-    country: 'VN'
+    recipient_name: "",
+    address: "",
+    phone: "",
+    city: VN_CITIES[0],
+    postal_code: "",
+    country: "VN",
   });
   const [showModal, setShowModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [message, setMessage] = useState(null);
 
   useEffect(() => {
-    fetchCartItems();
-  }, []);
-
-  const fetchCartItems = async () => {
-    try {
-      const res = await axiosInstance.get('/cart/items');
-      setCartItems(res.data.items || []);
-    } catch (err) {
-      console.error('Err load cart:', err);
-      setMessage({ text: 'Cannot load cart', type: 'error' });
-    } finally {
+    const state = location.state;
+    if (
+      state &&
+      Array.isArray(state.selectedItems) &&
+      state.selectedItems.length > 0
+    ) {
+      setCartItems(state.selectedItems);
       setLoading(false);
+    } else {
+      setLoading(false);
+      setMessage({
+        text: "Vui long quay lai gio hang va chon san pham can thanh toan.",
+        type: "error",
+      });
     }
-  };
+  }, [location.state]);
 
-  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+  const handleChange = (e) =>
+    setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+
     if (!form.recipient_name || !form.phone || !form.address || !form.city) {
-      setError('Please fill all shipping info!');
+      setError("Vui long dien day du thong tin giao hang.");
       return;
     }
 
     if (cartItems.length === 0) {
-      setError('Cart is empty!');
+      setError("Khong co san pham nao de thanh toan.");
       return;
     }
 
@@ -59,72 +131,126 @@ export default function CheckoutPage() {
   const handleConfirm = async () => {
     try {
       setSubmitting(true);
-      setError('');
+      setError("");
       setShowModal(false);
 
+      const state = location.state || {};
       const payload = {
         shipping_address: {
           recipient_name: form.recipient_name,
           phone: form.phone,
           address: form.address,
           city: form.city,
-          postal_code: form.postal_code || '',
-          country: form.country || 'VN'
-        }
+          postal_code: form.postal_code || "",
+          country: form.country || "VN",
+        },
+        selected_items: Array.isArray(state.selectedItemIds)
+          ? state.selectedItemIds
+          : [],
       };
 
-      const res = await axiosInstance.post('/orders', payload);
-      setMessage({ text: 'Order created: ' + res.data.order.code, type: 'success' });
-      
+      const res = await ordersAPI.createOrder(payload);
+      setMessage({
+        text: "Dat hang thanh cong: " + res.data.order.code,
+        type: "success",
+      });
+
       setTimeout(() => {
-        navigate('/app/orders');
+        navigate("/app/orders");
       }, 2000);
-      
     } catch (e) {
-      console.error('Order failed:', e);
-      setError(e?.response?.data?.error || 'Cannot create order');
+      console.error("Order failed:", e);
+      setError(e?.response?.data?.error || "Khong the tao don hang.");
       setSubmitting(false);
     }
   };
 
-  const calcSub = () => cartItems.reduce((s, i) => s + (i.price * i.quantity), 0);
-  const calcShip = () => calcSub() > 500000 ? 0 : 50000;
+  const calcSub = () =>
+    cartItems.reduce((s, i) => s + i.price * i.quantity, 0);
+  const calcShip = () => (calcSub() > 500000 ? 0 : 50000);
   const calcTotal = () => calcSub() + calcShip();
 
-  if (loading) return <Spinner message="Loading cart..." />;
+  if (loading) return <Spinner message="Dang tai gio hang..." />;
 
   return (
     <div className="container py-4">
-      <h4 className="fw-bold mb-4">Checkout</h4>
+      <h4 className="fw-bold mb-4">Thanh toan</h4>
 
       {message && (
-        <div className={'alert alert-' + (message.type === 'success' ? 'success' : 'danger')}>{message.text}</div>
+        <div
+          className={
+            "alert alert-" + (message.type === "success" ? "success" : "danger")
+          }
+        >
+          {message.text}
+        </div>
       )}
 
-      {error && (
-        <div className="alert alert-danger">{error}</div>
-      )}
+      {error && <div className="alert alert-danger">{error}</div>}
 
       {cartItems.length === 0 ? (
         <div className="text-center py-5">
-          <h5>Cart is empty!</h5>
-          <Button label="Continue Shopping" onClick={() => navigate('/')} />
+          <h5>Khong co san pham nao de thanh toan.</h5>
+          <Button
+            label="Quay lai gio hang"
+            onClick={() => navigate("/app/cart")}
+          />
         </div>
       ) : (
         <div className="row">
           <div className="col-lg-7">
             <div className="card mb-4">
               <div className="card-body">
-                <h5>Shipping Info</h5>
+                <h5 className="mb-3">Thong tin giao hang</h5>
                 <form onSubmit={handleSubmit}>
-                  <input type="text" className="form-control mb-2" name="recipient_name" placeholder="Name" value={form.recipient_name} onChange={handleChange} required />
-                  <input type="tel" className="form-control mb-2" name="phone" placeholder="Phone" value={form.phone} onChange={handleChange} required />
-                  <textarea className="form-control mb-2" name="address" placeholder="Address" value={form.address} onChange={handleChange} required />
-                  <select className="form-select mb-2" name="city" value={form.city} onChange={handleChange} required>
-                    <option value="Hồ Chí Minh">HCM</option>
-                    <option value="Hà Nội">Hanoi</option>
+                  <input
+                    type="text"
+                    className="form-control mb-2"
+                    name="recipient_name"
+                    placeholder="Ho ten nguoi nhan"
+                    value={form.recipient_name}
+                    onChange={handleChange}
+                    required
+                  />
+                  <input
+                    type="tel"
+                    className="form-control mb-2"
+                    name="phone"
+                    placeholder="So dien thoai"
+                    value={form.phone}
+                    onChange={handleChange}
+                    required
+                  />
+                  <textarea
+                    className="form-control mb-2"
+                    name="address"
+                    placeholder="Dia chi chi tiet"
+                    value={form.address}
+                    onChange={handleChange}
+                    required
+                  />
+                  <select
+                    className="form-select mb-2"
+                    name="city"
+                    value={form.city}
+                    onChange={handleChange}
+                    required
+                  >
+                    {VN_CITIES.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
                   </select>
-                  <Button label="Place Order" type="submit" disabled={submitting} />
+                  <input
+                    type="text"
+                    className="form-control mb-2"
+                    name="postal_code"
+                    placeholder="Ma buu chinh (khong bat buoc)"
+                    value={form.postal_code}
+                    onChange={handleChange}
+                  />
+                  <Button label="Dat hang" type="submit" disabled={submitting} />
                 </form>
               </div>
             </div>
@@ -133,23 +259,50 @@ export default function CheckoutPage() {
           <div className="col-lg-5">
             <div className="card">
               <div className="card-body">
-                <h5>Order Summary</h5>
-                <p>Subtotal: {calcSub().toLocaleString()}đ</p>
-                <p>Shipping: {calcShip() === 0 ? 'Free' : calcShip().toLocaleString() + 'đ'}</p>
-                <h4>Total: {calcTotal().toLocaleString()}đ</h4>
+                <h5 className="mb-3">Tom tat don hang</h5>
+                <p>
+                  Tam tinh: {calcSub().toLocaleString("vi-VN")}
+                  {" VND"}
+                </p>
+                <p>
+                  Phi van chuyen:{" "}
+                  {calcShip() === 0
+                    ? "Mien phi"
+                    : calcShip().toLocaleString("vi-VN") + " VND"}
+                </p>
+                <h4>
+                  Tong cong: {calcTotal().toLocaleString("vi-VN")}
+                  {" VND"}
+                </h4>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      <Modal show={showModal} onClose={() => setShowModal(false)} title="Confirm Order">
-        <p>Recipient: {form.recipient_name}</p>
-        <p>Phone: {form.phone}</p>
-        <p>Address: {form.address}, {form.city}</p>
-        <h5>Total: {calcTotal().toLocaleString()}đ</h5>
-        <button className="btn btn-primary" onClick={handleConfirm} disabled={submitting}>Confirm</button>
+      <Modal
+        show={showModal}
+        onClose={() => setShowModal(false)}
+        title="Xac nhan dat hang"
+      >
+        <p>Nguoi nhan: {form.recipient_name}</p>
+        <p>So dien thoai: {form.phone}</p>
+        <p>
+          Dia chi: {form.address}, {form.city}
+        </p>
+        <h5>
+          Tong cong: {calcTotal().toLocaleString("vi-VN")}
+          {" VND"}
+        </h5>
+        <button
+          className="btn btn-primary"
+          onClick={handleConfirm}
+          disabled={submitting}
+        >
+          Xac nhan
+        </button>
       </Modal>
     </div>
   );
 }
+

@@ -45,11 +45,14 @@ router.get('/', authenticateToken, async (req, res) => {
          ci.variant_code,
          ci.qty AS quantity,
          p.title AS name,
+         p.seller_id,
+         s.shop_name AS seller_name,
          COALESCE((SELECT TOP (1) url FROM product_image img WHERE img.product_id = p.product_id ORDER BY image_id ASC), '') AS image,
          v.list_price AS price
        FROM cart_item ci
        JOIN cart c ON c.cart_id = ci.cart_id AND c.status = 'Active'
        JOIN product p ON p.product_id = ci.product_id AND p.status = 'Active'
+       JOIN seller s ON s.seller_id = p.seller_id
        JOIN product_variant v ON v.product_id = ci.product_id AND v.variant_code = ci.variant_code AND v.is_active = 1
        WHERE c.cart_id = ?
        ORDER BY ci.added_at DESC`,
@@ -61,6 +64,8 @@ router.get('/', authenticateToken, async (req, res) => {
       productId: r.product_id,
       variant: r.variant_code,
       name: r.name,
+      seller_id: r.seller_id,
+      seller_name: r.seller_name,
       image: r.image,
       price: Number(r.price),
       quantity: r.quantity

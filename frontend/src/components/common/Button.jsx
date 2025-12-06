@@ -16,7 +16,8 @@ export default function Button({
         ? "btn-outline-primary"
         : variant === "danger"
         ? "btn-danger"
-        : "btn-bk"; // từ index.css
+        : "btn-bk"; // mapped to primary color in index.css
+
     const sizeClass =
       size === "sm" ? "btn-sm" : size === "lg" ? "btn-lg" : "";
 
@@ -36,7 +37,7 @@ export default function Button({
             className="spinner-border spinner-border-sm me-2"
             role="status"
           ></span>
-          Đang xử lý...
+          Dang xu ly...
         </>
       ) : (
         label
@@ -44,3 +45,4 @@ export default function Button({
     </button>
   );
 }
+

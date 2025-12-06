@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axiosInstance from "../../utils/axiosConfig";
+import { setAuthData } from "../../utils/api";
 
 export default function LoginForm({ onLogin }) {
   const [email, setEmail] = useState("");
@@ -22,9 +23,7 @@ export default function LoginForm({ onLogin }) {
 
       const { token, user } = response.data;
 
-      localStorage.setItem("token", token);
-      localStorage.setItem("user", JSON.stringify(user));
-
+      setAuthData(token, user);
       onLogin(user);
       navigate("/app", { replace: true });
     } catch (err) {
@@ -67,14 +66,16 @@ export default function LoginForm({ onLogin }) {
         />
       </div>
 
-      <button type="submit" className="btn btn-bk w-100 mt-2" disabled={loading}>
+      <button
+        type="submit"
+        className="btn btn-bk w-100 mt-2"
+        disabled={loading}
+      >
         {loading ? "Đang đăng nhập..." : "Đăng nhập"}
       </button>
 
       <div className="mt-3 text-center">
-        <small className="text-muted d-block mb-1">
-          Tài khoản test:
-        </small>
+        <small className="text-muted d-block mb-1">Tài khoản test:</small>
         <small className="text-muted d-block">
           <b>Seller:</b> seller1@demo.com / <b>password123</b>
         </small>

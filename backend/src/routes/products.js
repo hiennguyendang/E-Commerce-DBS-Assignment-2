@@ -120,13 +120,82 @@ router.get('/featured/list', async (req, res) => {
   }
 });
 
+// Public: get all active products of a given seller (by seller_id)
+router.get('/seller/:sellerId', async (req, res) => {
+  try {
+    const { sellerId } = req.params;
+
+    const [sellerRows] = await pool.execute(
+      `SELECT 
+         s.seller_id,
+         s.shop_name,
+         s.rating_avg,
+         ua.display_name AS owner_name,
+         ua.email       AS owner_email
+       FROM seller s
+       JOIN user_account ua ON ua.user_id = s.user_id
+       WHERE s.seller_id = ?`,
+      [sellerId]
+    );
+
+    if (sellerRows.length === 0) {
+      return res.status(404).json({ error: 'Seller not found' });
+    }
+
+    const seller = sellerRows[0];
+
+    const [productRows] = await pool.execute(
+      `SELECT 
+         p.product_id AS id,
+         p.title      AS name,
+         p.created_at,
+         'active'     AS status,
+         COALESCE((SELECT MIN(v.list_price) FROM product_variant v WHERE v.product_id = p.product_id AND v.is_active = 1), 0) AS min_price,
+         COALESCE((SELECT SUM(v.stock_qty) FROM product_variant v WHERE v.product_id = p.product_id AND v.is_active = 1), 0) AS stock_quantity,
+         (SELECT TOP (1) img.url FROM product_image img WHERE img.product_id = p.product_id ORDER BY img.image_id ASC) AS primary_image
+       FROM product p
+       WHERE p.status = 'Active' AND p.seller_id = ?
+       ORDER BY p.created_at DESC`,
+      [sellerId]
+    );
+
+    const products = productRows.map((r) => ({
+      id: r.id,
+      name: r.name,
+      price: r.min_price,
+      sale_price: null,
+      stock_quantity: r.stock_quantity,
+      status: r.status,
+      primary_image: r.primary_image,
+      created_at: r.created_at,
+    }));
+
+    res.json({ seller, products });
+  } catch (error) {
+    console.error('Error fetching seller products:', error);
+    res.status(500).json({ error: 'Failed to fetch seller products' });
+  }
+});
+
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
 
     const [pRows] = await pool.execute(
-      `SELECT p.product_id AS id, p.title AS name, p.description, p.created_at, p.status
-       FROM product p WHERE p.product_id = ? AND p.status = 'Active'`,
+      `SELECT 
+         p.product_id AS id, 
+         p.title      AS name, 
+         p.description, 
+         p.created_at, 
+         p.status,
+         s.seller_id,
+         s.shop_name,
+         s.rating_avg,
+         ua.display_name AS seller_owner_name
+       FROM product p 
+       JOIN seller s       ON s.seller_id = p.seller_id
+       JOIN user_account ua ON ua.user_id = s.user_id
+       WHERE p.product_id = ? AND p.status = 'Active'`,
       [id]
     );
     if (pRows.length === 0) {
@@ -163,7 +232,13 @@ router.get('/:id', async (req, res) => {
       status: 'active',
       images,
       categories: cats,
-      created_at: product.created_at
+      created_at: product.created_at,
+      seller: {
+        id: product.seller_id,
+        shop_name: product.shop_name,
+        rating_avg: product.rating_avg,
+        owner_name: product.seller_owner_name,
+      },
     });
   } catch (error) {
     console.error('Error fetching product:', error);

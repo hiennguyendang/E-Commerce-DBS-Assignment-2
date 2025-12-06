@@ -3,7 +3,7 @@ import { Facebook, Instagram, Youtube, Twitter } from "react-bootstrap-icons";
 
 export default function Footer() {
   return (
-    <footer className="bg-dark text-white pt-5 pb-3 mt-auto">
+    <footer className="bg-black text-white pt-5 pb-3 mt-auto">
       <div className="container">
         <div className="row">
           {/* Column 1: About */}
