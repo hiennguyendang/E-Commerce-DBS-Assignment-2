@@ -5,6 +5,7 @@ Mini e‑commerce project for CO2013 – Database Systems Assignment 2.
 - Frontend: React (CRA) – `frontend/`
 - Backend: Node.js / Express – `backend/`
 - Database: **Microsoft SQL Server** using T‑SQL schema `database/shopeelike_mssql.sql`
+- Assignment-required account: `smanager@demo.com` / password `123`, role `SystemAdmin` (UI login). Created by `database/create_app_user.sql`, DB login `sManager` is granted `db_owner`.
 
 > Lưu ý: nhánh hiện tại là bản đã port từ MySQL sang SQL Server để phù hợp yêu cầu môn học.  
 > Các file MySQL gốc (`shopeelike.sql`, `mockup_data_shopeelike.sql`, `setup-database.bat`) vẫn được giữ lại để tham khảo, nhưng khi demo nên chạy bản SQL Server ở đây.

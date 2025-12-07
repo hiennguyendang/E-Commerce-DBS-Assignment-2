@@ -661,30 +661,8 @@ IF @oid3_r IS NOT NULL AND NOT EXISTS (SELECT 1 FROM dbo.review WHERE order_id =
     VALUES (@oid3_r, 1, @b3_r, 5, 'Very warm coat, perfect fit.', DATEADD(DAY, -5, SYSDATETIME()));
 GO
 
--- 12. Vouchers
-IF NOT EXISTS (SELECT 1 FROM dbo.voucher WHERE code = 'TECH50')
-BEGIN
-    INSERT INTO dbo.voucher (
-        code,
-        title,
-        start_at,
-        end_at,
-        discount_type,
-        discount_value,
-        min_order_value,
-        stackable,
-        max_uses_per_buyer
-    )
-    VALUES
-      ('TECH50',      N'Giảm 10%% đơn hàng công nghệ',           DATEADD(DAY, -30, SYSDATETIME()), DATEADD(DAY, 30, SYSDATETIME()),  N'Percent', 10.00, 1000000, 1, 100),
-      ('FASHION20',   N'Giảm 20%% ngành hàng thời trang',        DATEADD(DAY, -20, SYSDATETIME()), DATEADD(DAY, 40, SYSDATETIME()),  N'Percent', 20.00,  500000, 1, 200),
-      ('FREESHIP',    N'Voucher miễn phí vận chuyển 30K',        DATEADD(DAY, -15, SYSDATETIME()), DATEADD(DAY, 45, SYSDATETIME()),  N'Fixed',   30000,  200000, 1, 500),
-      ('NEWYEAR2025', N'Giảm 15%% mừng năm mới 2025',            DATEADD(DAY, -10, SYSDATETIME()), DATEADD(DAY, 60, SYSDATETIME()),  N'Percent', 15.00,  800000, 1, 1000),
-      ('WELCOME100',  N'Giảm 100K cho khách hàng mới',           DATEADD(DAY,  -5, SYSDATETIME()), DATEADD(DAY, 90, SYSDATETIME()),  N'Fixed',  100000, 1500000, 1, 50);
-END;
-GO
 
--- 13. Carts
+-- 12. Carts
 DECLARE @b1_c BIGINT, @b2_c BIGINT, @b3_c BIGINT;
 SELECT @b1_c = user_id FROM dbo.user_account WHERE email = 'buyer1@demo.com';
 SELECT @b2_c = user_id FROM dbo.user_account WHERE email = 'buyer2@demo.com';
@@ -723,30 +701,6 @@ IF @c2 IS NOT NULL AND NOT EXISTS (SELECT 1 FROM dbo.cart_item WHERE cart_id = @
 IF @c3 IS NOT NULL AND NOT EXISTS (SELECT 1 FROM dbo.cart_item WHERE cart_id = @c3)
     INSERT INTO dbo.cart_item (cart_id, product_id, variant_code, qty, added_at)
     VALUES (@c3, @p4_c, 'DEFAULT', 2, DATEADD(HOUR, -2, SYSDATETIME()));
-GO
-
--- 14. Shipments
-DECLARE @oid1_s BIGINT, @oid2_s BIGINT, @oid3_s BIGINT;
-DECLARE @b1_s BIGINT, @b2_s BIGINT, @b3_s BIGINT;
-SELECT @b1_s = user_id FROM dbo.user_account WHERE email = 'buyer1@demo.com';
-SELECT @b2_s = user_id FROM dbo.user_account WHERE email = 'buyer2@demo.com';
-SELECT @b3_s = user_id FROM dbo.user_account WHERE email = 'buyer3@demo.com';
-
-SELECT TOP 1 @oid1_s = order_id FROM dbo.orders WHERE buyer_id = @b1_s AND status = 'Completed';
-SELECT TOP 1 @oid2_s = order_id FROM dbo.orders WHERE buyer_id = @b2_s AND status = 'Paid';
-SELECT TOP 1 @oid3_s = order_id FROM dbo.orders WHERE buyer_id = @b3_s AND status = 'Shipped';
-
-IF @oid1_s IS NOT NULL AND NOT EXISTS (SELECT 1 FROM dbo.shipment WHERE order_id = @oid1_s)
-    INSERT INTO dbo.shipment (order_id, tracking_no, weight_kg, status, shipped_at, delivered_at)
-    VALUES (@oid1_s, 'VNP123456789VN', 0.5, 'Delivered', DATEADD(DAY, -15, SYSDATETIME()), DATEADD(DAY, -11, SYSDATETIME()));
-
-IF @oid2_s IS NOT NULL AND NOT EXISTS (SELECT 1 FROM dbo.shipment WHERE order_id = @oid2_s)
-    INSERT INTO dbo.shipment (order_id, tracking_no, weight_kg, status, shipped_at, delivered_at)
-    VALUES (@oid2_s, 'GHN987654321VN', 2.5, 'Shipping', DATEADD(DAY, -5, SYSDATETIME()), NULL);
-
-IF @oid3_s IS NOT NULL AND NOT EXISTS (SELECT 1 FROM dbo.shipment WHERE order_id = @oid3_s)
-    INSERT INTO dbo.shipment (order_id, tracking_no, weight_kg, status, shipped_at, delivered_at)
-    VALUES (@oid3_s, 'JT456789123VN', 1.2, 'Shipping', DATEADD(DAY, -3, SYSDATETIME()), NULL);
 GO
 
 -- 5. GENERATE INVOICES FOR EXISTING ORDERS

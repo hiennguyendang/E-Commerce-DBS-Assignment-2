@@ -495,23 +495,7 @@ CREATE TABLE dbo.payment (
 GO
 
 ----------------------------------------------------
--- VOUCHERS - REMOVED (Not implemented in this version)
-----------------------------------------------------
-
-CREATE TABLE dbo.order_voucher (
-    order_id       BIGINT       NOT NULL,
-    voucher_id     BIGINT       NOT NULL,
-    applied_amount DECIMAL(14,2) NOT NULL,
-    applied_at     DATETIME2(0)  NOT NULL CONSTRAINT DF_order_voucher_applied_at DEFAULT SYSDATETIME(),
-    CONSTRAINT PK_order_voucher PRIMARY KEY (order_id, voucher_id),
-    CONSTRAINT FK_ov_o FOREIGN KEY (order_id)   REFERENCES dbo.orders(order_id)   ON DELETE CASCADE,
-    CONSTRAINT FK_ov_v FOREIGN KEY (voucher_id) REFERENCES dbo.voucher(voucher_id) ON DELETE CASCADE,
-    CONSTRAINT CK_order_voucher_amount CHECK (applied_amount >= 0)
-);
-GO
-
-----------------------------------------------------
--- REVIEWS & SHIPMENTS
+-- REVIEWS
 ----------------------------------------------------
 
 CREATE TABLE dbo.review (
@@ -528,27 +512,6 @@ CREATE TABLE dbo.review (
         REFERENCES dbo.order_item(order_id, line_no) ON DELETE CASCADE,
     CONSTRAINT FK_review_buyer FOREIGN KEY (buyer_id) REFERENCES dbo.buyer(user_id) ON DELETE CASCADE,
     CONSTRAINT CK_review_rating CHECK (rating BETWEEN 1 AND 5)
-);
-GO
-
-CREATE TABLE dbo.shipment (
-    shipment_id  BIGINT IDENTITY(1,1) NOT NULL,
-    order_id     BIGINT       NOT NULL,
-    tracking_no  NVARCHAR(40) NOT NULL,
-    weight_kg    DECIMAL(10,3) NOT NULL CONSTRAINT DF_shipment_weight_kg DEFAULT (0),
-    status       NVARCHAR(20)  NOT NULL CONSTRAINT DF_shipment_status DEFAULT N'Ready',
-    shipped_at   DATETIME2(0)  NULL,
-    delivered_at DATETIME2(0)  NULL,
-    CONSTRAINT PK_shipment PRIMARY KEY (shipment_id),
-    CONSTRAINT UQ_shipment_order UNIQUE (order_id),
-    CONSTRAINT FK_shipment_order FOREIGN KEY (order_id) REFERENCES dbo.orders(order_id) ON DELETE CASCADE,
-    CONSTRAINT CK_shipment_weight CHECK (weight_kg >= 0),
-    CONSTRAINT CK_shipment_dates CHECK (
-        delivered_at IS NULL OR (shipped_at IS NOT NULL AND delivered_at > shipped_at)
-    ),
-    CONSTRAINT CK_shipment_status CHECK (status IN (
-        N'Ready', N'Shipping', N'Delivered', N'Returned', N'Cancelled'
-    ))
 );
 GO
 
