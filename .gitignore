@@ -121,3 +121,5 @@ public/uploads/
 # Database
 *.sqlite
 *.sqlite3
+frontend/dist/
+tmp_seller.txt
