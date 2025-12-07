@@ -1,8 +1,19 @@
-import React from "react";
-import { Link } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import LoginForm from "../components/auth/LoginForm";
 
 export default function LoginPage({ onLogin }) {
+  const [searchParams] = useSearchParams();
+  const [successMessage, setSuccessMessage] = useState("");
+
+  useEffect(() => {
+    if (searchParams.get("message") === "upgrade_success") {
+      setSuccessMessage("🎉 Đăng ký Seller thành công! Vui lòng đăng nhập lại để truy cập kênh người bán.");
+      // Clear message after 5 seconds
+      setTimeout(() => setSuccessMessage(""), 5000);
+    }
+  }, [searchParams]);
+
   return (
     <div className="login-page d-flex flex-column min-vh-100">
       {/* Header */}
@@ -25,6 +36,18 @@ export default function LoginPage({ onLogin }) {
       {/* Login form */}
       <main className="flex-grow-1 d-flex align-items-center justify-content-center bg-light">
         <div className="login-container">
+          {successMessage && (
+            <div className="alert alert-success alert-dismissible fade show" role="alert">
+              {successMessage}
+              <button 
+                type="button" 
+                className="btn-close" 
+                onClick={() => setSuccessMessage("")}
+                aria-label="Close"
+              ></button>
+            </div>
+          )}
+          
           <LoginForm onLogin={onLogin} />
 
           <div className="text-center mt-3">

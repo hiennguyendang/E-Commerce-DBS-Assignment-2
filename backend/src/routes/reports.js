@@ -6,7 +6,7 @@ const { authenticateToken, requireSellerOrAdmin } = require('../middleware/auth'
 router.get('/seller/stats', authenticateToken, requireSellerOrAdmin, async (req, res) => {
   try {
     const [sellers] = await pool.execute(
-      'SELECT seller_id FROM seller WHERE user_id = ?',
+      'SELECT seller_id, rating_avg FROM seller WHERE user_id = ?',
       [req.user.id]
     );
 
@@ -15,6 +15,7 @@ router.get('/seller/stats', authenticateToken, requireSellerOrAdmin, async (req,
     }
 
     const sellerId = sellers[0].seller_id;
+    const ratingAvg = sellers[0].rating_avg;
 
     const [rows] = await pool.execute('EXEC dbo.sp_get_seller_stats ?', [sellerId]);
 
@@ -25,6 +26,7 @@ router.get('/seller/stats', authenticateToken, requireSellerOrAdmin, async (req,
       products: Number(stats.products || 0),
       orders: Number(stats.orders || 0),
       revenue: Number(stats.revenue || 0),
+      rating: Number(ratingAvg || 0),
     });
   } catch (error) {
     console.error('Get seller stats via SP error:', error);

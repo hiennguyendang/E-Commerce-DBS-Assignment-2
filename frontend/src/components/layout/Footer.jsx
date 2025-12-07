@@ -40,7 +40,11 @@ export default function Footer() {
               <li className="mb-2"><a href="#" className="text-white-50 text-decoration-none">Tuyển dụng</a></li>
               <li className="mb-2"><a href="#" className="text-white-50 text-decoration-none">Điều khoản</a></li>
               <li className="mb-2"><a href="#" className="text-white-50 text-decoration-none">Chính sách bảo mật</a></li>
-              <li className="mb-2"><a href="#" className="text-white-50 text-decoration-none">Kênh người bán</a></li>
+              <li className="mb-2">
+                <a href="/seller/register" className="text-warning fw-bold text-decoration-none">
+                  🏪 Kênh người bán
+                </a>
+              </li>
             </ul>
           </div>
 

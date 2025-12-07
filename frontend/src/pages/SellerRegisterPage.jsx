@@ -1,8 +1,8 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import RegisterForm from "../components/auth/RegisterForm";
+import SellerRegisterForm from "../components/auth/SellerRegisterForm";
 
-export default function RegisterPage() {
+export default function SellerRegisterPage({ existingUser }) {
   return (
     <div className="login-page d-flex flex-column min-vh-100">
       {/* ===== Header ===== */}
@@ -16,16 +16,16 @@ export default function RegisterPage() {
         </div>
       </header>
 
-      {/* ===== Register Form ===== */}
+      {/* ===== Seller Register Form ===== */}
       <main className="flex-grow-1 d-flex align-items-center justify-content-center bg-light">
         <div className="login-container">
-          <RegisterForm />
+          <SellerRegisterForm existingUser={existingUser} />
 
-          {/* Link quay lại đăng nhập */}
+          {/* Link quay lại */}
           <div className="text-center mt-3">
-            <span className="text-muted">Đã có tài khoản? </span>
-            <Link to="/login" className="text-primary fw-bold text-decoration-none">
-              Đăng ký ngay
+            <span className="text-muted">Quay lại </span>
+            <Link to="/" className="text-primary fw-bold text-decoration-none">
+              Trang chủ
             </Link>
           </div>
         </div>

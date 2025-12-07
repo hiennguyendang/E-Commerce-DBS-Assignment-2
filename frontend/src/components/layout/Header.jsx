@@ -93,7 +93,19 @@ export default function Header({ user, onLogout }) {
                       <i className="bi bi-bag me-2"></i>Don hang
                     </a>
                   </li>
-                  {user.role === "Seller" && (
+                  <li>
+                    <a className="dropdown-item" href="/app/returns">
+                      <i className="bi bi-arrow-return-left me-2"></i>Đổi trả
+                    </a>
+                  </li>
+                  {user.role && user.role.toLowerCase() === "customer" && (
+                    <li>
+                      <a className="dropdown-item text-warning" href="/app/upgrade-to-seller">
+                        <i className="bi bi-shop me-2"></i>Kênh người bán
+                      </a>
+                    </li>
+                  )}
+                  {user.role && user.role.toLowerCase() === "seller" && (
                     <>
                       <li>
                         <hr className="dropdown-divider" />
@@ -104,6 +116,14 @@ export default function Header({ user, onLogout }) {
                           href="/app/seller"
                         >
                           <i className="bi bi-shop me-2"></i>Quan ly Shop
+                        </a>
+                      </li>
+                      <li>
+                        <a
+                          className="dropdown-item text-warning"
+                          href="/app/seller/returns"
+                        >
+                          <i className="bi bi-arrow-return-left me-2"></i>Quản lý đổi trả
                         </a>
                       </li>
                     </>

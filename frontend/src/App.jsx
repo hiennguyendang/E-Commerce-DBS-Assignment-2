@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import AppLayout from "./components/layout/AppLayout";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
+import SellerRegisterPage from "./pages/SellerRegisterPage";
 import HomePage from "./pages/HomePage";
 import ProductDetailPage from "./pages/ProductDetailPage";
 import SellerShopPage from "./pages/SellerShopPage";
@@ -14,6 +15,8 @@ import OrderDetailPage from "./pages/OrderDetailPage";
 import ProfilePage from "./pages/ProfilePage";
 import SellerDashboardPage from "./pages/SellerDashboardPage";
 import AdminDashboardPage from "./pages/AdminDashboardPage";
+import ReturnsPage from "./pages/ReturnsPage";
+import SellerReturnsPage from "./pages/SellerReturnsPage";
 import { cartAPI, getAuthToken, getUser, clearAuthData } from "./utils/api";
 import Toast from "./components/common/Toast";
 
@@ -78,9 +81,12 @@ export default function App() {
             <Route path="checkout" element={<CheckoutPage />} />
             <Route path="orders" element={<OrdersPage />} />
             <Route path="orders/:id" element={<OrderDetailPage />} />
+            <Route path="returns" element={<ReturnsPage />} />
             <Route path="profile" element={<ProfilePage user={user} />} />
+            <Route path="upgrade-to-seller" element={<SellerRegisterPage existingUser={user} />} />
 
             {user.role === "Seller" && <Route path="seller" element={<SellerDashboardPage />} />}
+            {user.role === "Seller" && <Route path="seller/returns" element={<SellerReturnsPage />} />}
             {user.role === "Admin" && <Route path="admin" element={<AdminDashboardPage />} />}
           </Route>
 
@@ -89,7 +95,9 @@ export default function App() {
       ) : (
         <Routes>
           <Route path="/" element={<LoginPage onLogin={handleLogin} />} />
+          <Route path="/login" element={<LoginPage onLogin={handleLogin} />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/seller/register" element={<SellerRegisterPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       )}

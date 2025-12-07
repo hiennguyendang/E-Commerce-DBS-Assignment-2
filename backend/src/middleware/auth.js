@@ -11,9 +11,9 @@ const loadUserWithRole = async (userId) => {
        ua.phone_number,
        ua.created_at,
        CASE 
-         WHEN a.user_id IS NOT NULL THEN 'admin'
-         WHEN s.user_id IS NOT NULL THEN 'seller'
-         ELSE 'customer'
+         WHEN a.user_id IS NOT NULL THEN 'Admin'
+         WHEN s.user_id IS NOT NULL THEN 'Seller'
+         ELSE 'Customer'
        END AS role
      FROM user_account ua
      LEFT JOIN admin a ON a.user_id = ua.user_id
@@ -80,9 +80,9 @@ const requireRole = (...roles) => {
   };
 };
 
-const requireAdmin = requireRole('admin');
+const requireAdmin = requireRole('Admin');
 
-const requireSellerOrAdmin = requireRole('seller', 'admin');
+const requireSellerOrAdmin = requireRole('Seller', 'Admin');
 
 module.exports = {
   authenticateToken,

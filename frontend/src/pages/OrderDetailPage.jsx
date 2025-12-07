@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Spinner from "../components/common/Spinner";
 import { ordersAPI, formatDate, formatPrice } from "../utils/api";
+import ReturnRequestModal from "../components/order/ReturnRequestModal";
+import axiosInstance from "../utils/axiosConfig";
 
 const renderVariant = (variant) =>
   !variant || variant === "DEFAULT" ? "Mặc định" : variant;
@@ -13,12 +15,27 @@ export default function OrderDetailPage() {
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [showReturnModal, setShowReturnModal] = useState(false);
+  const [returnRequest, setReturnRequest] = useState(null);
 
   useEffect(() => {
     async function fetchDetail() {
       try {
         const res = await ordersAPI.getOrderById(id);
         setOrder(res.data);
+
+        // Check if return request exists for this order
+        try {
+          const returnRes = await axiosInstance.get(`/returns/buyer`);
+          const existingReturn = returnRes.data.find(
+            (r) => r.order_id === parseInt(id)
+          );
+          if (existingReturn) {
+            setReturnRequest(existingReturn);
+          }
+        } catch (err) {
+          console.log("No return request found for this order");
+        }
       } catch (err) {
         console.error("Không thể tải chi tiết đơn hàng:", err);
         setError(
@@ -61,6 +78,64 @@ export default function OrderDetailPage() {
           0
         );
 
+  // Check if order is eligible for return
+  const canReturn = () => {
+    if (!order) return false;
+    
+    // Must be delivered or completed
+    const status = (order.status || '').trim().toLowerCase();
+    if (!['delivered', 'completed'].includes(status)) {
+      console.log('❌ Cannot return - status:', order.status);
+      return false;
+    }
+
+    // Must not have existing return request
+    if (returnRequest) {
+      console.log('❌ Cannot return - already has return request');
+      return false;
+    }
+
+    // Must be within 7 days of delivery
+    const deliveredDate = new Date(order.delivered_at || order.date);
+    const now = new Date();
+    const daysSinceDelivery = Math.floor((now - deliveredDate) / (1000 * 60 * 60 * 24));
+    
+    console.log('✅ Can return:', { status: order.status, daysSinceDelivery });
+    return daysSinceDelivery <= 7;
+  };
+
+  const getReturnButtonText = () => {
+    if (returnRequest) {
+      const statusMap = {
+        'Pending': '⏳ Chờ xác nhận',
+        'Approved': '✅ Đã chấp nhận',
+        'Rejected': '❌ Đã từ chối',
+        'Processing': '🔄 Đang xử lý',
+        'Completed': '✓ Hoàn tất',
+        'Cancelled': '🚫 Đã hủy'
+      };
+      return statusMap[returnRequest.status] || returnRequest.status;
+    }
+    
+    const status = (order?.status || '').trim().toLowerCase();
+    if (!['delivered', 'completed'].includes(status)) {
+      return 'Chưa thể đổi trả';
+    }
+    
+    const deliveredDate = new Date(order.delivered_at || order.date);
+    const now = new Date();
+    const daysSinceDelivery = Math.floor((now - deliveredDate) / (1000 * 60 * 60 * 24));
+    if (daysSinceDelivery > 7) {
+      return 'Hết hạn đổi trả';
+    }
+    return 'Yêu cầu đổi trả';
+  };
+
+  const handleReturnSuccess = () => {
+    // Reload order detail to get updated return request
+    window.location.reload();
+  };
+
   return (
     <div className="container py-4">
       <button
@@ -71,10 +146,65 @@ export default function OrderDetailPage() {
         &laquo; Quay lại danh sách đơn hàng
       </button>
 
-      <h4 className="fw-bold mb-3">
-        <i className="bi bi-receipt me-2" />
-        Chi tiết đơn hàng {order.code}
-      </h4>
+      <div className="d-flex justify-content-between align-items-center mb-3">
+        <h4 className="fw-bold mb-0">
+          <i className="bi bi-receipt me-2" />
+          Chi tiết đơn hàng {order.code}
+        </h4>
+        
+        <button
+          type="button"
+          className={`btn ${
+            returnRequest 
+              ? returnRequest.status === 'Rejected' || returnRequest.status === 'Cancelled'
+                ? 'btn-outline-danger'
+                : returnRequest.status === 'Completed'
+                ? 'btn-outline-success'
+                : 'btn-outline-warning'
+              : canReturn()
+              ? 'btn-warning'
+              : 'btn-outline-secondary'
+          }`}
+          onClick={() => {
+            alert('Nút được click!');
+            console.log('🔘 Return button clicked', { 
+              canReturn: canReturn(), 
+              order: order,
+              returnRequest: returnRequest 
+            });
+            if (canReturn()) {
+              alert('Đang mở modal đổi trả...');
+              setShowReturnModal(true);
+            } else {
+              alert('Đơn hàng chưa đủ điều kiện đổi trả hoặc đã quá hạn 7 ngày!');
+            }
+          }}
+        >
+          <i className="bi bi-arrow-return-left me-2"></i>
+          {getReturnButtonText()}
+        </button>
+      </div>
+
+      {returnRequest && (
+        <div className={`alert ${
+          returnRequest.status === 'Rejected' || returnRequest.status === 'Cancelled'
+            ? 'alert-danger'
+            : returnRequest.status === 'Completed'
+            ? 'alert-success'
+            : 'alert-warning'
+        } py-2 mb-3`}>
+          <strong>Yêu cầu đổi trả:</strong> {returnRequest.reason}
+          {returnRequest.description && (
+            <> - {returnRequest.description}</>
+          )}
+          {returnRequest.seller_response && (
+            <>
+              <br />
+              <strong>Phản hồi từ Shop:</strong> {returnRequest.seller_response}
+            </>
+          )}
+        </div>
+      )}
 
       <div className="row g-3 mb-4">
         <div className="col-md-6">
@@ -183,6 +313,14 @@ export default function OrderDetailPage() {
           </div>
         </div>
       </div>
+
+      {showReturnModal && (
+        <ReturnRequestModal
+          order={order}
+          onClose={() => setShowReturnModal(false)}
+          onSuccess={handleReturnSuccess}
+        />
+      )}
     </div>
   );
 }

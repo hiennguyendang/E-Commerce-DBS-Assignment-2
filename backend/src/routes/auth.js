@@ -9,10 +9,10 @@ const { authenticateToken } = require('../middleware/auth');
 router.post('/register', [
   body('email').isEmail().withMessage('Please provide a valid email'),
   body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters long'),
-  body('firstName').optional().isString(),
-  body('lastName').optional().isString(),
-  body('phone').optional().isString(),
-  body('dateOfBirth').optional().isISO8601().toDate()
+  body('userName').notEmpty().withMessage('Username is required'),
+  body('displayName').notEmpty().withMessage('Display name is required'),
+  body('phoneNumber').optional().isString(),
+  body('role').optional().isIn(['Buyer', 'Seller']).withMessage('Invalid role')
 ], async (req, res) => {
   const connection = await pool.getConnection();
   try {
@@ -22,15 +22,40 @@ router.post('/register', [
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { email, password, firstName = '', lastName = '', phone = null, dateOfBirth } = req.body;
+    const { 
+      email, 
+      password, 
+      userName, 
+      displayName, 
+      phoneNumber = null, 
+      role = 'Buyer',
+      shopName,
+      businessEmail,
+      businessPhone,
+      taxId,
+      businessLicenseNumber
+    } = req.body;
 
-    const [existing] = await connection.execute(
+    console.log('📝 Register attempt:', { email, userName, displayName, role });
+
+    // Check if email already exists
+    const [existingEmail] = await connection.execute(
       'SELECT user_id FROM user_account WHERE email = ?',
       [email]
     );
-    if (existing.length > 0) {
+    if (existingEmail.length > 0) {
       connection.release();
-      return res.status(400).json({ error: 'User with this email already exists' });
+      return res.status(400).json({ error: 'Email already exists' });
+    }
+
+    // Check if username already exists
+    const [existingUsername] = await connection.execute(
+      'SELECT user_id FROM user_account WHERE user_name = ?',
+      [userName]
+    );
+    if (existingUsername.length > 0) {
+      connection.release();
+      return res.status(400).json({ error: 'Username already exists' });
     }
 
     await connection.beginTransaction();
@@ -38,34 +63,44 @@ router.post('/register', [
     const saltRounds = 12;
     const passwordHash = await bcrypt.hash(password, saltRounds);
 
-    const displayName = `${firstName} ${lastName}`.trim() || email.split('@')[0];
-    let userNameBase = email.split('@')[0].replace(/[^a-zA-Z0-9_\-]/g, '').slice(0, 30) || `user${Date.now()}`;
-    let userName = userNameBase;
-
-    let suffix = 1;
-    while (true) {
-      const [u] = await connection.execute('SELECT 1 FROM user_account WHERE user_name = ?', [userName]);
-      if (u.length === 0) break;
-      userName = `${userNameBase}${suffix++}`;
-    }
-
-    const dob = dateOfBirth ? new Date(dateOfBirth) : new Date('1970-01-01');
+    const dob = new Date('1970-01-01');
 
     const [result] = await connection.execute(
       `INSERT INTO user_account (email, password_hash, display_name, user_name, phone_number, date_of_birth)
        VALUES (?, ?, ?, ?, ?, ?)`,
-      [email, passwordHash, displayName, userName, phone, dob]
+      [email, passwordHash, displayName, userName, phoneNumber, dob]
     );
 
     const userId = result.insertId;
 
-    await connection.execute('INSERT INTO buyer (user_id) VALUES (?)', [userId]);
+    // Create role-specific record
+    if (role === 'Seller') {
+      await connection.execute(
+        `INSERT INTO seller (user_id, shop_name, business_email, business_phone, tax_id, business_license_number, is_active)
+         VALUES (?, ?, ?, ?, ?, ?, 1)`,
+        [
+          userId,
+          shopName || displayName,
+          businessEmail || email,
+          businessPhone || phoneNumber,
+          taxId || null,
+          businessLicenseNumber || null
+        ]
+      );
+    } else {
+      await connection.execute('INSERT INTO buyer (user_id) VALUES (?)', [userId]);
+    }
 
     await connection.commit();
     connection.release();
 
+    console.log('✅ User registered successfully:', { userId, userName, email, role });
+
+    // Normalize role to Title Case for frontend compatibility
+    const normalizedRole = role === 'Seller' ? 'Seller' : 'Customer';
+
     const token = jwt.sign(
-      { id: userId, email, role: 'customer' },
+      { id: userId, email, role: normalizedRole },
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRE || '7d' }
     );
@@ -76,11 +111,10 @@ router.post('/register', [
       user: {
         id: userId,
         email,
-        firstName: displayName,
-        lastName: '',
-        role: 'customer',
+        name: displayName,
+        role: normalizedRole,  // Return Title Case: Customer or Seller
         userName,
-        phone
+        phone: phoneNumber
       }
     });
   } catch (error) {
@@ -92,7 +126,7 @@ router.post('/register', [
 });
 
 router.post('/login', [
-  body('email').isEmail().withMessage('Please provide a valid email'),
+  body('emailOrUsername').notEmpty().withMessage('Please provide email or username'),
   body('password').notEmpty().withMessage('Password is required')
 ], async (req, res) => {
   try {
@@ -101,20 +135,20 @@ router.post('/login', [
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { email, password } = req.body;
+    const { emailOrUsername, password } = req.body;
 
-    console.log('🔐 Login attempt:', { email, password: '***' });
+    console.log('🔐 Login attempt:', { emailOrUsername, password: '***' });
 
     const [users] = await pool.execute(
       `SELECT ua.user_id, ua.email, ua.password_hash, ua.display_name, ua.user_name, ua.phone_number,
-              CASE WHEN a.user_id IS NOT NULL THEN 'admin'
-                   WHEN s.user_id IS NOT NULL THEN 'seller'
-                   ELSE 'customer' END AS role
+              CASE WHEN a.user_id IS NOT NULL THEN 'Admin'
+                   WHEN s.user_id IS NOT NULL THEN 'Seller'
+                   ELSE 'Customer' END AS role
        FROM user_account ua
        LEFT JOIN admin a ON a.user_id = ua.user_id
        LEFT JOIN seller s ON s.user_id = ua.user_id
-       WHERE ua.email = ?`,
-      [email]
+       WHERE ua.email = ? OR ua.user_name = ?`,
+      [emailOrUsername, emailOrUsername]
     );
 
     console.log('👤 Found users:', users.length);
@@ -128,7 +162,7 @@ router.post('/login', [
     }
 
     if (users.length === 0) {
-      return res.status(401).json({ error: 'Invalid email or password' });
+      return res.status(401).json({ error: 'Invalid username/email or password' });
     }
 
     const user = users[0];
@@ -137,7 +171,7 @@ router.post('/login', [
     console.log('🔑 Password valid:', isPasswordValid);
     
     if (!isPasswordValid) {
-      return res.status(401).json({ error: 'Invalid email or password' });
+      return res.status(401).json({ error: 'Invalid username/email or password' });
     }
 
     const token = jwt.sign(
@@ -146,12 +180,8 @@ router.post('/login', [
       { expiresIn: process.env.JWT_EXPIRE || '7d' }
     );
 
-    const roleMap = {
-      'admin': 'Admin',
-      'seller': 'Seller',
-      'customer': 'Buyer'
-    };
-
+    // Return role as-is from database (lowercase: customer, seller, admin)
+    // Frontend will handle display formatting
     res.json({
       message: 'Login successful',
       token,
@@ -159,7 +189,7 @@ router.post('/login', [
         id: user.user_id,
         email: user.email,
         name: user.display_name,
-        role: roleMap[user.role] || 'Buyer',
+        role: user.role,  // Send DB role directly: customer, seller, admin
         userName: user.user_name,
         phone: user.phone_number
       }
@@ -167,6 +197,83 @@ router.post('/login', [
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ error: 'Failed to login' });
+  }
+});
+
+router.post('/upgrade-to-seller', authenticateToken, async (req, res) => {
+  const connection = await pool.getConnection();
+  try {
+    const {
+      shopName,
+      businessEmail,
+      businessPhone,
+      taxId,
+      businessLicenseNumber
+    } = req.body;
+
+    const userId = req.user.id;
+
+    console.log('🏪 Upgrade to seller attempt:', { userId, shopName });
+
+    // Check if user is already a seller
+    const [existingSeller] = await connection.execute(
+      'SELECT user_id FROM seller WHERE user_id = ?',
+      [userId]
+    );
+
+    if (existingSeller.length > 0) {
+      connection.release();
+      return res.status(400).json({ error: 'User is already a seller' });
+    }
+
+    // Get user info for defaults
+    const [users] = await connection.execute(
+      'SELECT email, phone_number, display_name FROM user_account WHERE user_id = ?',
+      [userId]
+    );
+
+    if (users.length === 0) {
+      connection.release();
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const user = users[0];
+
+    await connection.beginTransaction();
+
+    // Create seller record
+    await connection.execute(
+      `INSERT INTO seller (user_id, shop_name, business_email, business_phone, tax_id, business_license_number, is_active)
+       VALUES (?, ?, ?, ?, ?, ?, 1)`,
+      [
+        userId,
+        shopName || user.display_name,
+        businessEmail || user.email,
+        businessPhone || user.phone_number,
+        taxId || null,
+        businessLicenseNumber || null
+      ]
+    );
+
+    // Role is derived from seller table presence, no need to update user_account
+
+    await connection.commit();
+    connection.release();
+
+    console.log('✅ User upgraded to seller successfully:', { userId, shopName });
+
+    res.json({
+      message: 'Successfully upgraded to seller',
+      seller: {
+        userId,
+        shopName: shopName || user.display_name
+      }
+    });
+  } catch (error) {
+    try { await connection.rollback(); } catch (_) {}
+    connection.release();
+    console.error('Upgrade to seller error:', error);
+    res.status(500).json({ error: 'Failed to upgrade to seller' });
   }
 });
 

@@ -270,7 +270,7 @@ export default function SellerDashboardPage() {
           <div className="card bg-info text-white h-100">
             <div className="card-body text-center">
               <h5>Đánh giá</h5>
-              <h2>4.5</h2>
+              <h2>{safeStats.rating ? Number(safeStats.rating).toFixed(1) : 'N/A'}</h2>
             </div>
           </div>
         </div>

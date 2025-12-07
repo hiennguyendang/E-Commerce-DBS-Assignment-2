@@ -46,7 +46,7 @@ DECLARE @uid BIGINT;
 IF NOT EXISTS (SELECT 1 FROM dbo.user_account WHERE email = 'seller1@demo.com')
 BEGIN
     INSERT INTO dbo.user_account (email, password_hash, display_name, user_name, phone_number, date_of_birth)
-    VALUES ('seller1@demo.com', '$2a$10$LEE5v5MMt0tgzp5vta8/zew6BhgDpfIwg7/9fKOEbrtZj8LfeJEkK', 'Tech Store', 'techstore', '+84901111111', '1990-01-01');
+    VALUES ('seller1@demo.com', '$2a$12$4Af4FuGHmS/5J4fzOHPAGuvWFz.VeHzUbU3xMDcRFmehU8ymykKwy', 'Tech Store', 'techstore', '+84901111111', '1990-01-01');
     
     SET @uid = SCOPE_IDENTITY();
     
@@ -58,7 +58,7 @@ END;
 IF NOT EXISTS (SELECT 1 FROM dbo.user_account WHERE email = 'seller2@demo.com')
 BEGIN
     INSERT INTO dbo.user_account (email, password_hash, display_name, user_name, phone_number, date_of_birth)
-    VALUES ('seller2@demo.com', '$2a$10$LEE5v5MMt0tgzp5vta8/zew6BhgDpfIwg7/9fKOEbrtZj8LfeJEkK', 'Fashion Hub', 'fashionhub', '+84902222222', '1988-05-15');
+    VALUES ('seller2@demo.com', '$2a$12$4Af4FuGHmS/5J4fzOHPAGuvWFz.VeHzUbU3xMDcRFmehU8ymykKwy', 'Fashion Hub', 'fashionhub', '+84902222222', '1988-05-15');
     
     SET @uid = SCOPE_IDENTITY();
     
@@ -70,7 +70,7 @@ END;
 IF NOT EXISTS (SELECT 1 FROM dbo.user_account WHERE email = 'seller3@demo.com')
 BEGIN
     INSERT INTO dbo.user_account (email, password_hash, display_name, user_name, phone_number, date_of_birth)
-    VALUES ('seller3@demo.com', '$2a$10$LEE5v5MMt0tgzp5vta8/zew6BhgDpfIwg7/9fKOEbrtZj8LfeJEkK', 'Home Decor Plus', 'homedecor', '+84903333333', '1985-08-20');
+    VALUES ('seller3@demo.com', '$2a$12$4Af4FuGHmS/5J4fzOHPAGuvWFz.VeHzUbU3xMDcRFmehU8ymykKwy', 'Home Decor Plus', 'homedecor', '+84903333333', '1985-08-20');
     
     SET @uid = SCOPE_IDENTITY();
     
@@ -82,7 +82,7 @@ END;
 IF NOT EXISTS (SELECT 1 FROM dbo.user_account WHERE email = 'seller4@demo.com')
 BEGIN
     INSERT INTO dbo.user_account (email, password_hash, display_name, user_name, phone_number, date_of_birth)
-    VALUES ('seller4@demo.com', '$2a$10$LEE5v5MMt0tgzp5vta8/zew6BhgDpfIwg7/9fKOEbrtZj8LfeJEkK', 'Book World', 'bookworld', '+84904444444', '1992-11-10');
+    VALUES ('seller4@demo.com', '$2a$12$4Af4FuGHmS/5J4fzOHPAGuvWFz.VeHzUbU3xMDcRFmehU8ymykKwy', 'Book World', 'bookworld', '+84904444444', '1992-11-10');
     
     SET @uid = SCOPE_IDENTITY();
     
@@ -94,7 +94,7 @@ END;
 IF NOT EXISTS (SELECT 1 FROM dbo.user_account WHERE email = 'seller5@demo.com')
 BEGIN
     INSERT INTO dbo.user_account (email, password_hash, display_name, user_name, phone_number, date_of_birth)
-    VALUES ('seller5@demo.com', '$2a$10$LEE5v5MMt0tgzp5vta8/zew6BhgDpfIwg7/9fKOEbrtZj8LfeJEkK', 'Sports Pro', 'sportspro', '+84905555555', '1987-03-25');
+    VALUES ('seller5@demo.com', '$2a$12$4Af4FuGHmS/5J4fzOHPAGuvWFz.VeHzUbU3xMDcRFmehU8ymykKwy', 'Sports Pro', 'sportspro', '+84905555555', '1987-03-25');
     
     SET @uid = SCOPE_IDENTITY();
     
@@ -365,152 +365,74 @@ BEGIN
     -- 6b. Product Images - explicit mapping per product title (Unsplash)
 IF NOT EXISTS (SELECT 1 FROM dbo.product_image)
 BEGIN
-    DECLARE @img TABLE (title NVARCHAR(200), url NVARCHAR(255));
-
-    INSERT INTO @img (title, url) VALUES
-        -- Electronics (1-20)
-        (N'iPhone 15 Pro Max',              N'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=600'),
-        (N'Samsung Galaxy S24 Ultra',       N'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=600'),
-        (N'MacBook Pro M3 14"',             N'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=600'),
-        (N'Dell XPS 15',                    N'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=600'),
-        (N'iPad Air 11"',                   N'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=600'),
-        (N'Sony WH-1000XM5',                N'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600'),
-        (N'AirPods Pro 2',                  N'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600'),
-        (N'Apple Watch Series 9',           N'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=600'),
-        (N'Samsung Galaxy Watch 6',         N'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=600'),
-        (N'Canon EOS R6',                   N'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=600'),
-        (N'Sony A7 IV',                     N'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=600'),
-        (N'GoPro Hero 12',                  N'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=600'),
-        (N'DJI Mini 4 Pro',                 N'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=600'),
-        (N'PS5 Console',                    N'https://images.unsplash.com/photo-1511389026070-a14ae610a1be?w=600'),
-        (N'Xbox Series X',                  N'https://images.unsplash.com/photo-1511389026070-a14ae610a1be?w=600'),
-        (N'Nintendo Switch OLED',           N'https://images.unsplash.com/photo-1511389026070-a14ae610a1be?w=600'),
-        (N'LG 55" OLED TV',                 N'https://images.unsplash.com/photo-1503602642458-232111445657?w=600'),
-        (N'Samsung 65" QLED TV',            N'https://images.unsplash.com/photo-1503602642458-232111445657?w=600'),
-        (N'Bose SoundLink',                 N'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600'),
-        (N'Logitech MX Master 3S',          N'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=600'),
-
-        -- Fashion (21-40)
-        (N'Nike Air Max 270',               N'https://images.unsplash.com/photo-1489515217757-5fd1be406fef?w=600'),
-        (N'Adidas Ultraboost 23',           N'https://images.unsplash.com/photo-1489515217757-5fd1be406fef?w=600'),
-        (N'Levi''s 501 Jeans',              N'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=600'),
-        (N'Uniqlo Cotton T-Shirt',          N'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=600'),
-        (N'Zara Wool Coat',                 N'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=600'),
-        (N'H&M Dress',                      N'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=600'),
-        (N'Ralph Lauren Polo',              N'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=600'),
-        (N'Tommy Hilfiger Jacket',          N'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=600'),
-        (N'Converse Chuck Taylor',          N'https://images.unsplash.com/photo-1489515217757-5fd1be406fef?w=600'),
-        (N'Vans Old Skool',                 N'https://images.unsplash.com/photo-1489515217757-5fd1be406fef?w=600'),
-        (N'Ray-Ban Aviator',                N'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=600'),
-        (N'Casio G-Shock',                  N'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=600'),
-        (N'Michael Kors Bag',               N'https://images.unsplash.com/photo-1489515217757-5fd1be406fef?w=600'),
-        (N'Gucci Belt',                     N'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=600'),
-        (N'Nike Dri-FIT Shirt',             N'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=600'),
-        (N'Adidas Track Pants',             N'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=600'),
-        (N'Puma Hoodie',                    N'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=600'),
-        (N'The North Face Jacket',          N'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=600'),
-        (N'Columbia Fleece',                N'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=600'),
-        (N'Timberland Boots',               N'https://images.unsplash.com/photo-1489515217757-5fd1be406fef?w=600'),
-
-        -- Home & Living (41–60)
-        (N'IKEA Sofa Bed',                  N'https://images.unsplash.com/photo-1503602642458-232111445657?w=600'),
-        (N'Dining Table Set',               N'https://images.unsplash.com/photo-1503602642458-232111445657?w=600'),
-        (N'Queen Mattress',                 N'https://images.unsplash.com/photo-1503602642458-232111445657?w=600'),
-        (N'Office Chair',                   N'https://images.unsplash.com/photo-1503602642458-232111445657?w=600'),
-        (N'Bookshelf',                      N'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=600'),
-        (N'Table Lamp',                     N'https://images.unsplash.com/photo-1503602642458-232111445657?w=600'),
-        (N'Floor Lamp',                     N'https://images.unsplash.com/photo-1503602642458-232111445657?w=600'),
-        (N'Area Rug 5x7',                   N'https://images.unsplash.com/photo-1503602642458-232111445657?w=600'),
-        (N'Curtains Set',                   N'https://images.unsplash.com/photo-1503602642458-232111445657?w=600'),
-        (N'Wall Mirror',                    N'https://images.unsplash.com/photo-1503602642458-232111445657?w=600'),
-        (N'Plant Pot Set',                  N'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=600'),
-        (N'Throw Pillows',                  N'https://images.unsplash.com/photo-1503602642458-232111445657?w=600'),
-        (N'Coffee Table',                   N'https://images.unsplash.com/photo-1503602642458-232111445657?w=600'),
-        (N'TV Stand',                       N'https://images.unsplash.com/photo-1503602642458-232111445657?w=600'),
-        (N'Kitchen Cart',                   N'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=600'),
-        (N'Bar Stools Set',                 N'https://images.unsplash.com/photo-1503602642458-232111445657?w=600'),
-        (N'Nightstand',                     N'https://images.unsplash.com/photo-1503602642458-232111445657?w=600'),
-        (N'Wardrobe',                       N'https://images.unsplash.com/photo-1503602642458-232111445657?w=600'),
-        (N'Shoe Rack',                      N'https://images.unsplash.com/photo-1503602642458-232111445657?w=600'),
-        (N'Coat Rack',                      N'https://images.unsplash.com/photo-1503602642458-232111445657?w=600'),
-
-        -- Books & Stationery (61–80)
-        (N'Harry Potter Set',               N'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=600'),
-        (N'Atomic Habits',                  N'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=600'),
-        (N'The Alchemist',                  N'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=600'),
-        (N'1984',                           N'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=600'),
-        (N'Sapiens',                        N'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=600'),
-        (N'Educated',                       N'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=600'),
-        (N'The Hobbit',                     N'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=600'),
-        (N'Pride and Prejudice',            N'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=600'),
-        (N'To Kill a Mockingbird',          N'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=600'),
-        (N'Think and Grow Rich',            N'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=600'),
-        (N'Notebook Set',                   N'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=600'),
-        (N'Fountain Pen',                   N'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=600'),
-        (N'Pencil Case',                    N'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=600'),
-        (N'Highlighter Set',                N'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=600'),
-        (N'Sticky Notes',                   N'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=600'),
-        (N'Planner 2025',                   N'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=600'),
-        (N'Desk Organizer',                 N'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=600'),
-        (N'Stapler',                        N'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=600'),
-        (N'Paper Clips',                    N'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=600'),
-        (N'Binder Set',                     N'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=600'),
-
-        -- Sports & Outdoors (81–100)
-        (N'Yoga Mat',                       N'https://images.unsplash.com/photo-1495106245177-55dc6f43e83f?w=600'),
-        (N'Dumbbell Set',                   N'https://images.unsplash.com/photo-1495106245177-55dc6f43e83f?w=600'),
-        (N'Resistance Bands',               N'https://images.unsplash.com/photo-1495106245177-55dc6f43e83f?w=600'),
-        (N'Treadmill',                      N'https://images.unsplash.com/photo-1495106245177-55dc6f43e83f?w=600'),
-        (N'Exercise Bike',                  N'https://images.unsplash.com/photo-1495106245177-55dc6f43e83f?w=600'),
-        (N'Pull-up Bar',                    N'https://images.unsplash.com/photo-1495106245177-55dc6f43e83f?w=600'),
-        (N'Jump Rope',                      N'https://images.unsplash.com/photo-1495106245177-55dc6f43e83f?w=600'),
-        (N'Gym Bag',                        N'https://images.unsplash.com/photo-1495106245177-55dc6f43e83f?w=600'),
-        (N'Water Bottle',                   N'https://images.unsplash.com/photo-1495106245177-55dc6f43e83f?w=600'),
-        (N'Tennis Racket',                  N'https://images.unsplash.com/photo-1495106245177-55dc6f43e83f?w=600'),
-        (N'Basketball',                     N'https://images.unsplash.com/photo-1495106245177-55dc6f43e83f?w=600'),
-        (N'Soccer Ball',                    N'https://images.unsplash.com/photo-1495106245177-55dc6f43e83f?w=600'),
-        (N'Badminton Set',                  N'https://images.unsplash.com/photo-1495106245177-55dc6f43e83f?w=600'),
-        (N'Golf Clubs',                     N'https://images.unsplash.com/photo-1495106245177-55dc6f43e83f?w=600'),
-        (N'Camping Tent',                   N'https://images.unsplash.com/photo-1495106245177-55dc6f43e83f?w=600'),
-        (N'Sleeping Bag',                   N'https://images.unsplash.com/photo-1495106245177-55dc6f43e83f?w=600'),
-        (N'Hiking Backpack',                N'https://images.unsplash.com/photo-1495106245177-55dc6f43e83f?w=600'),
-        (N'Cycling Helmet',                 N'https://images.unsplash.com/photo-1495106245177-55dc6f43e83f?w=600'),
-        (N'Swimming Goggles',               N'https://images.unsplash.com/photo-1495106245177-55dc6f43e83f?w=600'),
-        (N'Fitness Tracker',                N'https://images.unsplash.com/photo-1495106245177-55dc6f43e83f?w=600'),
-
-        -- Automotive (101-110)
-        (N'Camera hành trình Full HD',       N'https://images.unsplash.com/photo-1503736334956-4c8f8e92946d?w=600'),
-        (N'Bộ thảm lót sàn ô tô 5D',         N'https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=600'),
-        (N'Bọc vô lăng da cao cấp',          N'https://images.unsplash.com/photo-1517673132405-a56a62b18caf?w=600'),
-        (N'Sạc nhanh ô tô 2 cổng USB-C',     N'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=600'),
-        (N'Giá đỡ điện thoại trên ô tô',     N'https://images.unsplash.com/photo-1518444028781-06e0e1b6c41b?w=600'),
-        (N'Máy lọc không khí trong xe hơi',  N'https://images.unsplash.com/photo-1487958449943-2429e8be8625?w=600'),
-        (N'Nước hoa treo xe hương gỗ',       N'https://images.unsplash.com/photo-1514311548101-4aa0b1c2c9f5?w=600'),
-        (N'Bơm lốp ô tô mini 12V',          N'https://images.unsplash.com/photo-1582719478250-cc53331634da?w=600'),
-        (N'Bạt phủ ô tô chống nắng',         N'https://images.unsplash.com/photo-1504215680853-026ed2a45def?w=600'),
-        (N'Bộ dung dịch vệ sinh nội thất',  N'https://images.unsplash.com/photo-1570294646112-27c7639a05de?w=600'),
-
-        -- Pet Supplies (111-120)
-        (N'Thức ăn hạt cho chó lớn',          N'https://images.unsplash.com/photo-1517849845537-4d257902454a?w=600'),
-        (N'Thức ăn hạt cho mèo trưởng thành', N'https://images.unsplash.com/photo-1517849845537-4d257902454a?w=600'),
-        (N'Pate mèo vị cá ngừ',               N'https://images.unsplash.com/photo-1517849845537-4d257902454a?w=600'),
-        (N'Bánh thưởng huấn luyện cho chó',   N'https://images.unsplash.com/photo-1517849845537-4d257902454a?w=600'),
-        (N'Dây dắt chó bằng da',              N'https://images.unsplash.com/photo-1517849845537-4d257902454a?w=600'),
-        (N'Balo phi hành gia cho mèo',        N'https://images.unsplash.com/photo-1517849845537-4d257902454a?w=600'),
-        (N'Nhà vệ sinh mèo kín',              N'https://images.unsplash.com/photo-1517849845537-4d257902454a?w=600'),
-        (N'Cát vệ sinh cho mèo không bụi',    N'https://images.unsplash.com/photo-1517849845537-4d257902454a?w=600'),
-        (N'Lồng vận chuyển thú cưng',         N'https://images.unsplash.com/photo-1517849845537-4d257902454a?w=600'),
-        (N'Đồ chơi chuột vải cho mèo',        N'https://images.unsplash.com/photo-1517849845537-4d257902454a?w=600');
+    -- Insert images using pattern-based mapping; use open placeholder images
+    DECLARE @imgMapping TABLE(pattern NVARCHAR(200), url NVARCHAR(255), priority INT);
+    INSERT INTO @imgMapping (pattern, url, priority)
+    VALUES
+      (N'%iPhone%',                       'https://placehold.co/600x400?text=iPhone', 1),
+      (N'%Galaxy%',                       'https://placehold.co/600x400?text=Galaxy', 1),
+      (N'%Phone%',                        'https://placehold.co/600x400?text=Phone', 2),
+      (N'%MacBook%',                      'https://placehold.co/600x400?text=MacBook', 1),
+      (N'%Laptop%',                       'https://placehold.co/600x400?text=Laptop', 2),
+      (N'%iPad%',                         'https://placehold.co/600x400?text=iPad', 1),
+      (N'%Tablet%',                       'https://placehold.co/600x400?text=Tablet', 2),
+      (N'%Headphone%',                    'https://placehold.co/600x400?text=Headphones', 1),
+      (N'%Earbuds%',                      'https://placehold.co/600x400?text=Earbuds', 2),
+      (N'%AirPods%',                      'https://placehold.co/600x400?text=AirPods', 2),
+      (N'%Watch%',                        'https://placehold.co/600x400?text=Watch', 2),
+      (N'%Camera%',                       'https://placehold.co/600x400?text=Camera', 1),
+      (N'%Canon%',                        'https://placehold.co/600x400?text=Camera', 1),
+      (N'%Sony A%',                       'https://placehold.co/600x400?text=Camera', 1),
+      (N'%GoPro%',                        'https://placehold.co/600x400?text=Action+Cam', 1),
+      (N'%DJI%',                          'https://placehold.co/600x400?text=Drone', 1),
+      (N'%PS5%',                          'https://placehold.co/600x400?text=Console', 1),
+      (N'%Xbox%',                         'https://placehold.co/600x400?text=Console', 1),
+      (N'%Nintendo%',                     'https://placehold.co/600x400?text=Console', 1),
+      (N'%TV%',                           'https://placehold.co/600x400?text=TV', 1),
+      (N'%Speaker%',                      'https://placehold.co/600x400?text=Speaker', 2),
+      (N'%Mouse%',                        'https://placehold.co/600x400?text=Mouse', 2),
+      (N'%Backpack%',                     'https://placehold.co/600x400?text=Backpack', 1),
+      (N'%Bag%',                          'https://placehold.co/600x400?text=Bag', 2),
+      (N'%T-Shirt%',                      'https://placehold.co/600x400?text=T-Shirt', 1),
+      (N'%Jacket%',                       'https://placehold.co/600x400?text=Jacket', 1),
+      (N'%Coat%',                         'https://placehold.co/600x400?text=Coat', 1),
+      (N'%Short%',                        'https://placehold.co/600x400?text=Shorts', 1),
+      (N'%Shoes%',                        'https://placehold.co/600x400?text=Shoes', 1),
+      (N'%Sneaker%',                      'https://placehold.co/600x400?text=Sneakers', 1),
+      (N'%Desk%',                         'https://placehold.co/600x400?text=Desk', 1),
+      (N'%Chair%',                        'https://placehold.co/600x400?text=Chair', 1),
+      (N'%Lamp%',                         'https://placehold.co/600x400?text=Lamp', 1),
+      (N'%Mug%',                          'https://placehold.co/600x400?text=Mug', 1),
+      (N'%Book%',                         'https://placehold.co/600x400?text=Book', 1),
+      (N'%Notebook%',                     'https://placehold.co/600x400?text=Notebook', 2),
+      (N'%Pen%',                          'https://placehold.co/600x400?text=Pen', 2),
+      (N'%Yoga%',                         'https://placehold.co/600x400?text=Yoga', 1),
+      (N'%Dumbbell%',                     'https://placehold.co/600x400?text=Dumbbell', 1),
+      (N'%Resistance%',                   'https://placehold.co/600x400?text=Bands', 1),
+      (N'%Treadmill%',                    'https://placehold.co/600x400?text=Treadmill', 1),
+      (N'%Bike%',                         'https://placehold.co/600x400?text=Bike', 1),
+      (N'%Helmet%',                       'https://placehold.co/600x400?text=Helmet', 1),
+      (N'%Tent%',                         'https://placehold.co/600x400?text=Tent', 1),
+      (N'%Sleeping Bag%',                 'https://placehold.co/600x400?text=Sleeping+Bag', 1),
+      (N'%Bottle%',                       'https://placehold.co/600x400?text=Bottle', 1),
+      (N'%Basketball%',                   'https://placehold.co/600x400?text=Basketball', 1),
+      (N'%Soccer%',                       'https://placehold.co/600x400?text=Soccer', 1),
+      (N'%Badminton%',                    'https://placehold.co/600x400?text=Badminton', 1),
+      (N'%Golf%',                         'https://placehold.co/600x400?text=Golf', 1),
+      (N'%Camping%',                      'https://placehold.co/600x400?text=Camping', 1);
 
     INSERT INTO dbo.product_image (product_id, url, caption)
     SELECT 
         p.product_id,
-        ISNULL(i.url, N'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=600') AS url, -- fallback nếu thiếu mapping
+        COALESCE(m.url, 'https://placehold.co/600x400?text=Product') AS url,
         p.title
     FROM dbo.product p
-    LEFT JOIN @img i
-        ON i.title = p.title;
-
+    OUTER APPLY (
+        SELECT TOP 1 url
+        FROM @imgMapping im
+        WHERE p.title LIKE im.pattern
+        ORDER BY im.priority
+    ) m;
 END;
 GO
 
@@ -521,7 +443,7 @@ DECLARE @uid BIGINT;
 IF NOT EXISTS (SELECT 1 FROM dbo.user_account WHERE email = 'buyer1@demo.com')
 BEGIN
     INSERT INTO dbo.user_account (email, password_hash, display_name, user_name, phone_number, date_of_birth)
-    VALUES ('buyer1@demo.com', '$2a$10$LEE5v5MMt0tgzp5vta8/zew6BhgDpfIwg7/9fKOEbrtZj8LfeJEkK', 'Minh Nguyen', 'buyer1', '+84911111111', '1992-02-02');
+    VALUES ('buyer1@demo.com', '$2a$12$4Af4FuGHmS/5J4fzOHPAGuvWFz.VeHzUbU3xMDcRFmehU8ymykKwy', 'Minh Nguyen', 'buyer1', '+84911111111', '1992-02-02');
     SET @uid = SCOPE_IDENTITY();
     INSERT INTO dbo.buyer (user_id, loyalty_level) VALUES (@uid, 'Silver');
 END;
@@ -530,7 +452,7 @@ END;
 IF NOT EXISTS (SELECT 1 FROM dbo.user_account WHERE email = 'buyer2@demo.com')
 BEGIN
     INSERT INTO dbo.user_account (email, password_hash, display_name, user_name, phone_number, date_of_birth)
-    VALUES ('buyer2@demo.com', '$2a$10$LEE5v5MMt0tgzp5vta8/zew6BhgDpfIwg7/9fKOEbrtZj8LfeJEkK', 'Lan Tran', 'buyer2', '+84922222222', '1995-03-03');
+    VALUES ('buyer2@demo.com', '$2a$12$4Af4FuGHmS/5J4fzOHPAGuvWFz.VeHzUbU3xMDcRFmehU8ymykKwy', 'Lan Tran', 'buyer2', '+84922222222', '1995-03-03');
     SET @uid = SCOPE_IDENTITY();
     INSERT INTO dbo.buyer (user_id, loyalty_level) VALUES (@uid, 'Bronze');
 END;
@@ -539,7 +461,7 @@ END;
 IF NOT EXISTS (SELECT 1 FROM dbo.user_account WHERE email = 'buyer3@demo.com')
 BEGIN
     INSERT INTO dbo.user_account (email, password_hash, display_name, user_name, phone_number, date_of_birth)
-    VALUES ('buyer3@demo.com', '$2a$10$LEE5v5MMt0tgzp5vta8/zew6BhgDpfIwg7/9fKOEbrtZj8LfeJEkK', 'Quang Le', 'buyer3', '+84933333333', '1990-07-15');
+    VALUES ('buyer3@demo.com', '$2a$12$4Af4FuGHmS/5J4fzOHPAGuvWFz.VeHzUbU3xMDcRFmehU8ymykKwy', 'Quang Le', 'buyer3', '+84933333333', '1990-07-15');
     SET @uid = SCOPE_IDENTITY();
     INSERT INTO dbo.buyer (user_id, loyalty_level) VALUES (@uid, 'Gold');
 END;
@@ -548,7 +470,7 @@ END;
 IF NOT EXISTS (SELECT 1 FROM dbo.user_account WHERE email = 'buyer4@demo.com')
 BEGIN
     INSERT INTO dbo.user_account (email, password_hash, display_name, user_name, phone_number, date_of_birth)
-    VALUES ('buyer4@demo.com', '$2a$10$LEE5v5MMt0tgzp5vta8/zew6BhgDpfIwg7/9fKOEbrtZj8LfeJEkK', 'Hoa Pham', 'buyer4', '+84944444444', '1993-12-05');
+    VALUES ('buyer4@demo.com', '$2a$12$4Af4FuGHmS/5J4fzOHPAGuvWFz.VeHzUbU3xMDcRFmehU8ymykKwy', 'Hoa Pham', 'buyer4', '+84944444444', '1993-12-05');
     SET @uid = SCOPE_IDENTITY();
     INSERT INTO dbo.buyer (user_id, loyalty_level) VALUES (@uid, 'Platinum');
 END;
@@ -613,11 +535,13 @@ SELECT @price3 = list_price FROM dbo.product_variant WHERE product_id = @p3;
 SELECT @price4 = list_price FROM dbo.product_variant WHERE product_id = @p4;
 SELECT @price5 = list_price FROM dbo.product_variant WHERE product_id = @p5;
 
+DECLARE @s1 CHAR(6); SELECT @s1 = seller_id FROM dbo.seller WHERE shop_name = 'Tech Store';
+
 -- Order 1
 IF NOT EXISTS (SELECT 1 FROM dbo.orders WHERE buyer_id = @b1 AND status = 'Completed')
 BEGIN
-    INSERT INTO dbo.orders (buyer_id, ship_to_address_id, ship_from_address_id, service_id, shipping_fee, status, total_amount)
-    VALUES (@b1, @addr1, @addr_seller, @svc, 30000, 'Completed', 0);
+    INSERT INTO dbo.orders (buyer_id, seller_id, ship_to_address_id, ship_from_address_id, service_id, shipping_fee, status, total_amount)
+    VALUES (@b1, @s1, @addr1, @addr_seller, @svc, 30000, 'Completed', 0);
     
     DECLARE @oid1 BIGINT = SCOPE_IDENTITY();
     INSERT INTO dbo.order_item (order_id, line_no, product_id, variant_code, qty, unit_price)
@@ -627,8 +551,8 @@ END;
 -- Order 2
 IF NOT EXISTS (SELECT 1 FROM dbo.orders WHERE buyer_id = @b2 AND status = 'Paid')
 BEGIN
-    INSERT INTO dbo.orders (buyer_id, ship_to_address_id, ship_from_address_id, service_id, shipping_fee, status, total_amount)
-    VALUES (@b2, @addr2, @addr_seller, @svc, 50000, 'Paid', 0);
+    INSERT INTO dbo.orders (buyer_id, seller_id, ship_to_address_id, ship_from_address_id, service_id, shipping_fee, status, total_amount)
+    VALUES (@b2, @s1, @addr2, @addr_seller, @svc, 50000, 'Paid', 0);
     
     DECLARE @oid2 BIGINT = SCOPE_IDENTITY();
     INSERT INTO dbo.order_item (order_id, line_no, product_id, variant_code, qty, unit_price)
@@ -639,8 +563,8 @@ END;
 -- Order 3
 IF NOT EXISTS (SELECT 1 FROM dbo.orders WHERE buyer_id = @b3 AND status = 'Shipped')
 BEGIN
-    INSERT INTO dbo.orders (buyer_id, ship_to_address_id, ship_from_address_id, service_id, shipping_fee, status, total_amount)
-    VALUES (@b3, @addr3, @addr_seller, @svc, 25000, 'Shipped', 0);
+    INSERT INTO dbo.orders (buyer_id, seller_id, ship_to_address_id, ship_from_address_id, service_id, shipping_fee, status, total_amount)
+    VALUES (@b3, @s1, @addr3, @addr_seller, @svc, 25000, 'Shipped', 0);
     
     DECLARE @oid3 BIGINT = SCOPE_IDENTITY();
     INSERT INTO dbo.order_item (order_id, line_no, product_id, variant_code, qty, unit_price)
@@ -650,8 +574,8 @@ END;
 -- Order 4
 IF NOT EXISTS (SELECT 1 FROM dbo.orders WHERE buyer_id = @b1 AND status = 'Pending')
 BEGIN
-    INSERT INTO dbo.orders (buyer_id, ship_to_address_id, ship_from_address_id, service_id, shipping_fee, status, total_amount)
-    VALUES (@b1, @addr1, @addr_seller, @svc, 0, 'Pending', 0);
+    INSERT INTO dbo.orders (buyer_id, seller_id, ship_to_address_id, ship_from_address_id, service_id, shipping_fee, status, total_amount)
+    VALUES (@b1, @s1, @addr1, @addr_seller, @svc, 0, 'Pending', 0);
     
     DECLARE @oid4 BIGINT = SCOPE_IDENTITY();
     INSERT INTO dbo.order_item (order_id, line_no, product_id, variant_code, qty, unit_price)
@@ -665,7 +589,7 @@ DECLARE @uid BIGINT;
 IF NOT EXISTS (SELECT 1 FROM dbo.user_account WHERE email = 'admin1@demo.com')
 BEGIN
     INSERT INTO dbo.user_account (email, password_hash, display_name, user_name, phone_number, date_of_birth)
-    VALUES ('admin1@demo.com', '$2a$10$LEE5v5MMt0tgzp5vta8/zew6BhgDpfIwg7/9fKOEbrtZj8LfeJEkK', 'System Admin', 'sysadmin', '+84900000001', '1985-01-15');
+    VALUES ('admin1@demo.com', '$2a$12$4Af4FuGHmS/5J4fzOHPAGuvWFz.VeHzUbU3xMDcRFmehU8ymykKwy', 'System Admin', 'sysadmin', '+84900000001', '1985-01-15');
     SET @uid = SCOPE_IDENTITY();
     INSERT INTO dbo.admin (user_id, role) VALUES (@uid, 'SystemAdmin');
 END;
@@ -673,7 +597,7 @@ END;
 IF NOT EXISTS (SELECT 1 FROM dbo.user_account WHERE email = 'admin2@demo.com')
 BEGIN
     INSERT INTO dbo.user_account (email, password_hash, display_name, user_name, phone_number, date_of_birth)
-    VALUES ('admin2@demo.com', '$2a$10$LEE5v5MMt0tgzp5vta8/zew6BhgDpfIwg7/9fKOEbrtZj8LfeJEkK', 'Content Mod', 'contentmod', '+84900000002', '1988-03-20');
+    VALUES ('admin2@demo.com', '$2a$12$4Af4FuGHmS/5J4fzOHPAGuvWFz.VeHzUbU3xMDcRFmehU8ymykKwy', 'Content Mod', 'contentmod', '+84900000002', '1988-03-20');
     SET @uid = SCOPE_IDENTITY();
     INSERT INTO dbo.admin (user_id, role) VALUES (@uid, 'ContentModerator');
 END;
@@ -681,7 +605,7 @@ END;
 IF NOT EXISTS (SELECT 1 FROM dbo.user_account WHERE email = 'admin3@demo.com')
 BEGIN
     INSERT INTO dbo.user_account (email, password_hash, display_name, user_name, phone_number, date_of_birth)
-    VALUES ('admin3@demo.com', '$2a$10$LEE5v5MMt0tgzp5vta8/zew6BhgDpfIwg7/9fKOEbrtZj8LfeJEkK', 'Support Agent', 'supportagent', '+84900000003', '1990-06-10');
+    VALUES ('admin3@demo.com', '$2a$12$4Af4FuGHmS/5J4fzOHPAGuvWFz.VeHzUbU3xMDcRFmehU8ymykKwy', 'Support Agent', 'supportagent', '+84900000003', '1990-06-10');
     SET @uid = SCOPE_IDENTITY();
     INSERT INTO dbo.admin (user_id, role) VALUES (@uid, 'SupportAgent');
 END;
@@ -689,7 +613,7 @@ END;
 IF NOT EXISTS (SELECT 1 FROM dbo.user_account WHERE email = 'admin4@demo.com')
 BEGIN
     INSERT INTO dbo.user_account (email, password_hash, display_name, user_name, phone_number, date_of_birth)
-    VALUES ('admin4@demo.com', '$2a$10$LEE5v5MMt0tgzp5vta8/zew6BhgDpfIwg7/9fKOEbrtZj8LfeJEkK', 'Finance Officer', 'financeofficer', '+84900000004', '1987-09-25');
+    VALUES ('admin4@demo.com', '$2a$12$4Af4FuGHmS/5J4fzOHPAGuvWFz.VeHzUbU3xMDcRFmehU8ymykKwy', 'Finance Officer', 'financeofficer', '+84900000004', '1987-09-25');
     SET @uid = SCOPE_IDENTITY();
     INSERT INTO dbo.admin (user_id, role) VALUES (@uid, 'FinanceOfficer');
 END;
@@ -812,4 +736,108 @@ IF @oid3 IS NOT NULL AND NOT EXISTS (SELECT 1 FROM dbo.shipment WHERE order_id =
     VALUES (@oid3, 'JT456789123VN', 1.2, 'Shipping', DATEADD(DAY, -3, SYSDATETIME()), NULL);
 GO
 
+-- 5. GENERATE INVOICES FOR EXISTING ORDERS
+-- ========================================
+PRINT 'Generating invoices for existing Paid/Completed orders...';
+
+INSERT INTO dbo.invoice (
+    order_id, invoice_number, issue_date, 
+    subtotal, tax_rate, tax_amount, shipping_fee, grand_total,
+    invoice_type, payment_status
+)
+SELECT 
+    o.order_id,
+    'INV' + RIGHT('000000' + CAST(o.order_id AS VARCHAR), 6) AS invoice_number,
+    o.order_date AS issue_date,
+    o.total_amount - o.shipping_fee AS subtotal,
+    10.00 AS tax_rate,
+    ROUND((o.total_amount - o.shipping_fee) * 0.10, 2) AS tax_amount,
+    o.shipping_fee,
+    o.total_amount AS grand_total,
+    N'Standard' AS invoice_type,
+    CASE 
+        WHEN o.status IN (N'Paid', N'Packing', N'Shipped', N'Completed') THEN N'Paid'
+        WHEN o.status = N'Cancelled' THEN N'Cancelled'
+        ELSE N'Unpaid'
+    END AS payment_status
+FROM dbo.orders o
+WHERE NOT EXISTS (
+    SELECT 1 FROM dbo.invoice i WHERE i.order_id = o.order_id
+);
+
+PRINT '✓ Generated ' + CAST(@@ROWCOUNT AS VARCHAR) + ' invoices';
+GO
+
+-- ========================================
+-- 6. GENERATE INVOICE ITEMS
+-- ========================================
+PRINT 'Generating invoice items...';
+
+INSERT INTO dbo.invoice_item (
+    invoice_id, line_no, product_id, variant_code, 
+    description, qty, unit_price, tax_rate, tax_amount
+)
+SELECT 
+    inv.invoice_id,
+    oi.line_no,
+    oi.product_id,
+    oi.variant_code,
+    p.name + N' - ' + oi.variant_code AS description,
+    oi.qty,
+    oi.unit_price,
+    10.00 AS tax_rate,
+    ROUND(oi.qty * oi.unit_price * 0.10, 2) AS tax_amount
+FROM dbo.invoice inv
+INNER JOIN dbo.order_item oi ON inv.order_id = oi.order_id
+INNER JOIN dbo.product p ON oi.product_id = p.product_id
+WHERE NOT EXISTS (
+    SELECT 1 FROM dbo.invoice_item ii 
+    WHERE ii.invoice_id = inv.invoice_id AND ii.line_no = oi.line_no
+);
+
+PRINT '✓ Generated ' + CAST(@@ROWCOUNT AS VARCHAR) + ' invoice items';
+GO
+
+-- ========================================
+-- 7. CREATE MOCK PAYMENT DATA
+-- ========================================
+PRINT 'Creating mock payment data...';
+
+INSERT INTO dbo.payment (
+    order_id, amount, payment_method, status, 
+    transaction_id, payment_date
+)
+SELECT 
+    o.order_id,
+    o.total_amount,
+    CASE (o.order_id % 5)
+        WHEN 0 THEN N'CreditCard'
+        WHEN 1 THEN N'Momo'
+        WHEN 2 THEN N'VNPay'
+        WHEN 3 THEN N'BankTransfer'
+        ELSE N'Cash'
+    END AS payment_method,
+    CASE 
+        WHEN o.status IN (N'Paid', N'Packing', N'Shipped', N'Completed') THEN N'Success'
+        WHEN o.status = N'Cancelled' THEN N'Cancelled'
+        WHEN o.status = N'Refunded' THEN N'Refunded'
+        ELSE N'Pending'
+    END AS status,
+    'TXN' + RIGHT('0000000000' + CAST(o.order_id AS VARCHAR), 10) AS transaction_id,
+    CASE 
+        WHEN o.status IN (N'Paid', N'Packing', N'Shipped', N'Completed') 
+        THEN DATEADD(MINUTE, 5, o.order_date)
+        ELSE NULL
+    END AS payment_date
+FROM dbo.orders o
+WHERE NOT EXISTS (
+    SELECT 1 FROM dbo.payment p WHERE p.order_id = o.order_id
+);
+
+PRINT '✓ Created ' + CAST(@@ROWCOUNT AS VARCHAR) + ' payment records';
+GO
+
+-- ========================================
+
 PRINT 'Mockup data inserted successfully for MSSQL.';
+

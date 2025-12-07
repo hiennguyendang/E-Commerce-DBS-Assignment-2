@@ -4,7 +4,7 @@ import axiosInstance from "../../utils/axiosConfig";
 import { setAuthData } from "../../utils/api";
 
 export default function LoginForm({ onLogin }) {
-  const [email, setEmail] = useState("");
+  const [emailOrUsername, setEmailOrUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -17,7 +17,7 @@ export default function LoginForm({ onLogin }) {
 
     try {
       const response = await axiosInstance.post("/auth/login", {
-        email,
+        emailOrUsername,
         password,
       });
 
@@ -41,13 +41,13 @@ export default function LoginForm({ onLogin }) {
       {error && <div className="alert alert-danger py-2">{error}</div>}
 
       <div className="mb-3 text-start">
-        <label className="form-label">Email</label>
+        <label className="form-label">Tên đăng nhập hoặc Email</label>
         <input
-          type="email"
+          type="text"
           className="form-control"
-          placeholder="Nhập email (vd: seller1@demo.com)"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          placeholder="Nhập tên đăng nhập hoặc email"
+          value={emailOrUsername}
+          onChange={(e) => setEmailOrUsername(e.target.value)}
           required
           disabled={loading}
         />
@@ -77,19 +77,19 @@ export default function LoginForm({ onLogin }) {
       <div className="mt-3 text-center">
         <small className="text-muted d-block mb-1">Tài khoản test:</small>
         <small className="text-muted d-block">
-          <b>Seller:</b> seller1@demo.com / <b>password123</b>
+          <b>Seller:</b> seller1@demo.com / <b>123</b>
         </small>
         <small className="text-muted d-block">
-          <b>Admin:</b> admin1@demo.com / <b>password123</b>
+          <b>Admin:</b> admin1@demo.com / <b>123</b>
         </small>
         <small className="text-muted d-block">
-          <b>Buyer 1:</b> buyer1@demo.com / <b>password123</b>
+          <b>Buyer 1:</b> buyer1@demo.com / <b>123</b>
         </small>
         <small className="text-muted d-block">
-          <b>Buyer 2:</b> buyer2@demo.com / <b>password123</b>
+          <b>Buyer 2:</b> buyer2@demo.com / <b>123</b>
         </small>
         <small className="text-muted d-block mb-1">
-          <b>Buyer 3:</b> buyer3@demo.com / <b>password123</b>
+          <b>Buyer 3:</b> buyer3@demo.com / <b>123</b>
         </small>
         <small className="text-muted">
           Hoặc đăng ký tài khoản Buyer mới.

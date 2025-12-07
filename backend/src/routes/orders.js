@@ -95,14 +95,21 @@ router.get('/:id', authenticateToken, async (req, res) => {
 
     // Authorize by role
     const role = (req.user.role || '').toLowerCase();
+    console.log('👤 Order access check:', { 
+      orderId, 
+      userId: req.user.id, 
+      userRole: role, 
+      buyerId: header.buyer_id 
+    });
 
-    if (role === 'customer') {
-      if (header.buyer_id !== req.user.id) {
-        return res.status(404).json({ error: 'Order not found' });
-      }
+    // Buyer access: check if user is the buyer of this order
+    if (header.buyer_id === req.user.id) {
+      // User is the buyer - always allow
     } else if (role === 'seller') {
+      // Seller trying to view order they're NOT the buyer of
+      // Check if they sold products in this order
       const [owned] = await pool.execute(
-        `SELECT 1 
+        `SELECT TOP 1 1 
          FROM order_item oi
          JOIN product p ON p.product_id = oi.product_id
          JOIN seller s  ON s.seller_id = p.seller_id
@@ -111,11 +118,13 @@ router.get('/:id', authenticateToken, async (req, res) => {
       );
 
       if (owned.length === 0) {
+        console.log('🚫 Seller access denied:', { orderId, userId: req.user.id });
         return res.status(403).json({ error: 'Access denied for this order' });
       }
     } else if (role === 'admin') {
-      // admin luôn được phép
+      // Admin can view all orders
     } else {
+      // Regular customer trying to view someone else's order
       return res.status(403).json({ error: 'Access denied for this order' });
     }
 
@@ -138,15 +147,14 @@ router.get('/:id', authenticateToken, async (req, res) => {
         }
       : null;
 
-    // Thông tin shop (seller)
+    // Thông tin shop (seller) - now use seller_id from orders table
     const [sellerRows] = await pool.execute(
-      `SELECT TOP (1)
-         p.seller_id,
+      `SELECT 
+         s.seller_id,
          s.shop_name
-       FROM order_item oi
-       JOIN product p ON p.product_id = oi.product_id
-       JOIN seller s ON s.seller_id = p.seller_id
-       WHERE oi.order_id = ?`,
+       FROM orders o
+       JOIN seller s ON s.seller_id = o.seller_id
+       WHERE o.order_id = ?`,
       [orderId]
     );
 

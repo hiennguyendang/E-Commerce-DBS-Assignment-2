@@ -1,5 +1,6 @@
 -- Shopeelike schema for Microsoft SQL Server (T-SQL)
 -- Adapted from MySQL schema (shopeelike.sql).
+-- Updated with Invoice, Payment, and Return Request tables.
 
 IF DB_ID('shopeelike') IS NOT NULL
 BEGIN
@@ -71,14 +72,22 @@ CREATE TABLE dbo.seller (
     user_id    BIGINT         NOT NULL,
     shop_name  NVARCHAR(120)  NOT NULL,
     tax_id     NVARCHAR(20)   NULL,
+    business_email NVARCHAR(255) NULL,
+    business_phone NVARCHAR(20) NULL,
+    business_license_number NVARCHAR(50) NULL,
+    is_active  BIT            NOT NULL CONSTRAINT DF_seller_is_active DEFAULT (1),
     joined_at  DATETIME2(0)   NOT NULL CONSTRAINT DF_seller_joined_at DEFAULT SYSDATETIME(),
     rating_avg DECIMAL(3,2)   NOT NULL CONSTRAINT DF_seller_rating_avg DEFAULT (0.00),
     CONSTRAINT PK_seller PRIMARY KEY (seller_id),
     CONSTRAINT UQ_seller_shop_name UNIQUE (shop_name),
-    CONSTRAINT UQ_seller_tax_id UNIQUE (tax_id),
+    -- CONSTRAINT UQ_seller_tax_id UNIQUE (tax_id), -- Removed to allow multiple NULLs via filtered index
     CONSTRAINT CK_seller_id_format CHECK (seller_id LIKE 'SEL[0-9][0-9][0-9]'),
     CONSTRAINT FK_seller_user FOREIGN KEY (user_id) REFERENCES dbo.user_account(user_id) ON DELETE CASCADE
 );
+GO
+
+-- Create filtered unique index for tax_id to allow multiple NULLs
+CREATE UNIQUE INDEX IX_seller_tax_id ON dbo.seller(tax_id) WHERE tax_id IS NOT NULL;
 GO
 
 -- Trigger to auto-generate seller_id when not provided
@@ -93,17 +102,21 @@ BEGIN
       @user_id    BIGINT,
       @shop_name  NVARCHAR(120),
       @tax_id     NVARCHAR(20),
+      @business_email NVARCHAR(255),
+      @business_phone NVARCHAR(20),
+      @business_license_number NVARCHAR(50),
+      @is_active  BIT,
       @joined_at  DATETIME2(0),
       @rating_avg DECIMAL(3,2),
       @seller_id  CHAR(6),
       @seq        INT;
 
     DECLARE cur CURSOR LOCAL FAST_FORWARD FOR
-      SELECT user_id, shop_name, tax_id, joined_at, rating_avg, seller_id
+      SELECT user_id, shop_name, tax_id, business_email, business_phone, business_license_number, is_active, joined_at, rating_avg, seller_id
       FROM inserted;
 
     OPEN cur;
-    FETCH NEXT FROM cur INTO @user_id, @shop_name, @tax_id, @joined_at, @rating_avg, @seller_id;
+    FETCH NEXT FROM cur INTO @user_id, @shop_name, @tax_id, @business_email, @business_phone, @business_license_number, @is_active, @joined_at, @rating_avg, @seller_id;
 
     WHILE @@FETCH_STATUS = 0
     BEGIN
@@ -113,17 +126,21 @@ BEGIN
         SET @seller_id = 'SEL' + RIGHT('000' + CAST(@seq AS VARCHAR(10)), 3);
       END;
 
-      INSERT INTO dbo.seller (seller_id, user_id, shop_name, tax_id, joined_at, rating_avg)
+      INSERT INTO dbo.seller (seller_id, user_id, shop_name, tax_id, business_email, business_phone, business_license_number, is_active, joined_at, rating_avg)
       VALUES (
         @seller_id,
         @user_id,
         @shop_name,
         @tax_id,
+        @business_email,
+        @business_phone,
+        @business_license_number,
+        ISNULL(@is_active, 1),
         ISNULL(@joined_at, SYSDATETIME()),
         ISNULL(@rating_avg, 0.00)
       );
 
-      FETCH NEXT FROM cur INTO @user_id, @shop_name, @tax_id, @joined_at, @rating_avg, @seller_id;
+      FETCH NEXT FROM cur INTO @user_id, @shop_name, @tax_id, @business_email, @business_phone, @business_license_number, @is_active, @joined_at, @rating_avg, @seller_id;
     END;
 
     CLOSE cur;
@@ -289,6 +306,7 @@ GO
 CREATE TABLE dbo.orders (
     order_id             BIGINT IDENTITY(1,1) NOT NULL,
     buyer_id             BIGINT       NOT NULL,
+    seller_id            CHAR(6)      NOT NULL,
     ship_to_address_id   BIGINT       NOT NULL,
     ship_from_address_id BIGINT       NOT NULL,
     service_id           SMALLINT     NOT NULL,
@@ -298,6 +316,7 @@ CREATE TABLE dbo.orders (
     total_amount         DECIMAL(14,2) NOT NULL CONSTRAINT DF_orders_total_amount DEFAULT (0),
     CONSTRAINT PK_orders PRIMARY KEY (order_id),
     CONSTRAINT FK_orders_buyer     FOREIGN KEY (buyer_id)             REFERENCES dbo.buyer(user_id),
+    CONSTRAINT FK_orders_seller    FOREIGN KEY (seller_id)            REFERENCES dbo.seller(seller_id),
     CONSTRAINT FK_orders_ship_to   FOREIGN KEY (ship_to_address_id)   REFERENCES dbo.address(address_id),
     CONSTRAINT FK_orders_ship_from FOREIGN KEY (ship_from_address_id) REFERENCES dbo.address(address_id),
     CONSTRAINT FK_orders_service   FOREIGN KEY (service_id)           REFERENCES dbo.shipping_service(service_id),
@@ -323,6 +342,154 @@ CREATE TABLE dbo.order_item (
         REFERENCES dbo.product_variant(product_id, variant_code),
     CONSTRAINT CK_order_item_qty CHECK (qty > 0),
     CONSTRAINT CK_order_item_unit_price CHECK (unit_price >= 0)
+);
+GO
+
+----------------------------------------------------
+-- RETURNS, INVOICES & PAYMENTS
+----------------------------------------------------
+
+CREATE TABLE dbo.return_request (
+    return_request_id BIGINT IDENTITY(1,1) NOT NULL,
+    order_id          BIGINT NOT NULL,
+    line_no           INT NOT NULL,
+    buyer_id          BIGINT NOT NULL,
+    seller_id         BIGINT NOT NULL,
+    reason            NVARCHAR(500) NOT NULL,
+    description       NVARCHAR(MAX),
+    status            NVARCHAR(50) NOT NULL DEFAULT 'Pending',
+    seller_response   NVARCHAR(MAX),
+    refund_amount     DECIMAL(10,2),
+    request_date      DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
+    response_date     DATETIME2(0),
+    refunded_at       DATETIME2(0),
+    
+    CONSTRAINT PK_return_request PRIMARY KEY (return_request_id),
+    CONSTRAINT UQ_return_request_order_line UNIQUE (order_id, line_no),
+    CONSTRAINT FK_return_request_order_item FOREIGN KEY (order_id, line_no) 
+        REFERENCES dbo.order_item(order_id, line_no) ON DELETE CASCADE,
+    CONSTRAINT FK_return_request_buyer FOREIGN KEY (buyer_id) 
+        REFERENCES dbo.user_account(user_id),
+    CONSTRAINT FK_return_request_seller FOREIGN KEY (seller_id) 
+        REFERENCES dbo.user_account(user_id),
+    CONSTRAINT CK_return_request_status CHECK (status IN (
+        N'Pending', N'Approved', N'Rejected', N'Processing', N'Completed', N'Cancelled'
+    )),
+    CONSTRAINT CK_return_request_refund_amount CHECK (refund_amount >= 0),
+    CONSTRAINT CK_return_request_dates CHECK (
+        (response_date >= request_date OR response_date IS NULL) AND
+        (refunded_at >= response_date OR refunded_at IS NULL)
+    )
+);
+GO
+
+CREATE TABLE dbo.invoice (
+    invoice_id     BIGINT IDENTITY(1,1) NOT NULL,
+    order_id       BIGINT NOT NULL,
+    invoice_number NVARCHAR(50) NOT NULL,
+    issue_date     DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
+    due_date       DATETIME2(0),
+    
+    -- Amounts
+    subtotal       DECIMAL(14,2) NOT NULL,
+    tax_rate       DECIMAL(5,2) NOT NULL DEFAULT 0,
+    tax_amount     DECIMAL(14,2) NOT NULL DEFAULT 0,
+    shipping_fee   DECIMAL(12,2) NOT NULL DEFAULT 0,
+    grand_total    DECIMAL(14,2) NOT NULL,
+    
+    -- Invoice type
+    invoice_type   NVARCHAR(20) NOT NULL DEFAULT N'Standard',
+    
+    -- Tax information
+    tax_code       NVARCHAR(50),
+    company_name   NVARCHAR(255),
+    company_address NVARCHAR(500),
+    
+    -- Status
+    payment_status NVARCHAR(20) NOT NULL DEFAULT N'Unpaid',
+    
+    -- Tracking
+    created_at     DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
+    updated_at     DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
+    
+    CONSTRAINT PK_invoice PRIMARY KEY (invoice_id),
+    CONSTRAINT UQ_invoice_number UNIQUE (invoice_number),
+    CONSTRAINT UQ_invoice_order UNIQUE (order_id),
+    CONSTRAINT FK_invoice_order FOREIGN KEY (order_id) 
+        REFERENCES dbo.orders(order_id) ON DELETE CASCADE,
+    CONSTRAINT CK_invoice_type CHECK (invoice_type IN (
+        N'Standard', N'VAT', N'Export', N'Proforma'
+    )),
+    CONSTRAINT CK_invoice_payment_status CHECK (payment_status IN (
+        N'Unpaid', N'Partial', N'Paid', N'Overdue', N'Cancelled'
+    )),
+    CONSTRAINT CK_invoice_amounts CHECK (
+        subtotal >= 0 AND tax_amount >= 0 AND 
+        shipping_fee >= 0 AND grand_total >= 0
+    ),
+    CONSTRAINT CK_invoice_tax_rate CHECK (tax_rate >= 0 AND tax_rate <= 100)
+);
+GO
+
+CREATE TABLE dbo.invoice_item (
+    invoice_id   BIGINT NOT NULL,
+    line_no      INT NOT NULL,
+    product_id   BIGINT NOT NULL,
+    variant_code NVARCHAR(20) NOT NULL,
+    description  NVARCHAR(500),
+    qty          INT NOT NULL,
+    unit_price   DECIMAL(12,2) NOT NULL,
+    
+    -- Tax details
+    tax_rate     DECIMAL(5,2) NOT NULL DEFAULT 0,
+    tax_amount   DECIMAL(12,2) NOT NULL DEFAULT 0,
+    
+    -- Totals (computed columns)
+    line_subtotal AS (qty * unit_price) PERSISTED,
+    line_total    AS (qty * unit_price + tax_amount) PERSISTED,
+    
+    CONSTRAINT PK_invoice_item PRIMARY KEY (invoice_id, line_no),
+    CONSTRAINT FK_invoice_item_invoice FOREIGN KEY (invoice_id) 
+        REFERENCES dbo.invoice(invoice_id) ON DELETE CASCADE,
+    CONSTRAINT FK_invoice_item_product FOREIGN KEY (product_id, variant_code) 
+        REFERENCES dbo.product_variant(product_id, variant_code),
+    CONSTRAINT CK_invoice_item_qty CHECK (qty > 0),
+    CONSTRAINT CK_invoice_item_unit_price CHECK (unit_price >= 0),
+    CONSTRAINT CK_invoice_item_tax_rate CHECK (tax_rate >= 0 AND tax_rate <= 100)
+);
+GO
+
+CREATE TABLE dbo.payment (
+    payment_id     BIGINT IDENTITY(1,1) NOT NULL,
+    order_id       BIGINT NOT NULL,
+    
+    -- Payment details
+    amount         DECIMAL(14,2) NOT NULL,
+    payment_method NVARCHAR(50) NOT NULL,
+    
+    -- Status tracking
+    status         NVARCHAR(20) NOT NULL DEFAULT N'Pending',
+    
+    -- Transaction info
+    transaction_id NVARCHAR(100),
+    provider_response NVARCHAR(MAX),
+    
+    -- Timestamps
+    payment_date   DATETIME2(0),
+    created_at     DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
+    updated_at     DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
+    
+    CONSTRAINT PK_payment PRIMARY KEY (payment_id),
+    CONSTRAINT FK_payment_order FOREIGN KEY (order_id) 
+        REFERENCES dbo.orders(order_id) ON DELETE CASCADE,
+    CONSTRAINT CK_payment_amount CHECK (amount >= 0),
+    CONSTRAINT CK_payment_method CHECK (payment_method IN (
+        N'Cash', N'CreditCard', N'DebitCard', N'BankTransfer', 
+        N'EWallet', N'PayPal', N'Momo', N'ZaloPay', N'VNPay'
+    )),
+    CONSTRAINT CK_payment_status CHECK (status IN (
+        N'Pending', N'Processing', N'Success', N'Failed', N'Cancelled', N'Refunded'
+    ))
 );
 GO
 
@@ -631,5 +798,46 @@ BEGIN
     BEGIN
         THROW 50005, 'Cart item quantity cannot exceed 50 units.', 1;
     END;
+END;
+GO
+
+CREATE TRIGGER dbo.trg_invoice_updated_at
+ON dbo.invoice
+AFTER UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    UPDATE dbo.invoice
+    SET updated_at = SYSDATETIME()
+    WHERE invoice_id IN (SELECT invoice_id FROM inserted);
+END;
+GO
+
+CREATE TRIGGER dbo.trg_payment_updated_at
+ON dbo.payment
+AFTER UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    UPDATE dbo.payment
+    SET updated_at = SYSDATETIME()
+    WHERE payment_id IN (SELECT payment_id FROM inserted);
+END;
+GO
+
+CREATE TRIGGER dbo.trg_payment_update_order_status
+ON dbo.payment
+AFTER INSERT, UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    -- When payment succeeds, update order status to Paid
+    UPDATE o
+    SET o.status = N'Paid'
+    FROM dbo.orders o
+    INNER JOIN inserted i ON o.order_id = i.order_id
+    WHERE i.status = N'Success' 
+        AND o.status = N'Pending';
 END;
 GO
