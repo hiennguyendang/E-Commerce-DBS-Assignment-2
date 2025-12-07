@@ -146,7 +146,7 @@ router.get('/buyer', authenticateToken, async (req, res) => {
           ua.display_name as seller_name
          FROM return_request rr
          INNER JOIN orders o ON rr.order_id = o.order_id
-         INNER JOIN seller s ON rr.seller_id = s.user_id
+         INNER JOIN seller s ON o.seller_id = s.seller_id
          INNER JOIN user_account ua ON s.user_id = ua.user_id
          WHERE rr.buyer_id = @buyer_id
          ORDER BY rr.request_date DESC`
@@ -188,8 +188,9 @@ router.get('/seller', authenticateToken, async (req, res) => {
           ua.email as buyer_email
          FROM return_request rr
          INNER JOIN orders o ON rr.order_id = o.order_id
+         INNER JOIN seller s ON o.seller_id = s.seller_id
          INNER JOIN user_account ua ON rr.buyer_id = ua.user_id
-         WHERE rr.seller_id = @seller_id
+         WHERE s.user_id = @seller_id
          ORDER BY rr.request_date DESC`
       );
 
@@ -267,11 +268,11 @@ router.post('/respond/:id', [
          WHERE return_request_id = @return_request_id`
       );
 
-    // If approved, update order status
+    // If approved, update order status to a valid value in CK_orders_status
     if (action === 'approve') {
       await pool.request()
         .input('order_id', sql.BigInt, request.order_id)
-        .query(`UPDATE orders SET status = N'Returned' WHERE order_id = @order_id`);
+        .query(`UPDATE orders SET status = N'Refunded' WHERE order_id = @order_id`);
     }
 
     console.log('✅ Return request responded:', { returnRequestId, action, newStatus });

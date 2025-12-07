@@ -20,7 +20,8 @@ export default function SellerReturnsPage() {
     try {
       const res = await axiosInstance.get("/returns/seller");
       console.log("Seller returns data:", res.data);
-      setReturns(Array.isArray(res.data) ? res.data : []);
+      const list = Array.isArray(res.data?.requests) ? res.data.requests : (Array.isArray(res.data) ? res.data : []);
+      setReturns(list);
     } catch (err) {
       console.error("Failed to fetch returns:", err);
       setError("Không thể tải danh sách đổi trả!");
@@ -46,7 +47,7 @@ export default function SellerReturnsPage() {
 
     try {
       await axiosInstance.post(`/returns/respond/${returnId}`, {
-        approve,
+        action: approve ? "approve" : "reject",
         response
       });
 

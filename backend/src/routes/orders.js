@@ -64,6 +64,31 @@ router.get('/', authenticateToken, async (req, res) => {
   }
 });
 
+// ============================================
+// GET /shipping-services - Lấy danh sách đơn vị vận chuyển
+// ============================================
+router.get('/shipping-services', async (req, res) => {
+  try {
+    const pool = await getPool();
+    const result = await pool.request()
+      .query(`SELECT 
+        service_id,
+        carrier,
+        service_name,
+        est_days_min,
+        est_days_max,
+        base_fee,
+        per_kg_fee
+      FROM dbo.shipping_service
+      ORDER BY base_fee ASC, carrier ASC`);
+    
+    res.json({ services: result.recordset });
+  } catch (error) {
+    console.error('Get shipping services error:', error);
+    res.status(500).json({ error: 'Failed to get shipping services' });
+  }
+});
+
 // Chi tiết 1 đơn hàng (buyer / seller / admin)
 router.get('/:id', authenticateToken, async (req, res) => {
   const orderId = parseInt(req.params.id, 10);
@@ -324,31 +349,6 @@ async function getOrCreateDefaultService(pool) {
   
   return insertResult.recordset[0].service_id;
 }
-
-// ============================================
-// GET /shipping-services - Lấy danh sách đơn vị vận chuyển
-// ============================================
-router.get('/shipping-services', async (req, res) => {
-  try {
-    const pool = await getPool();
-    const result = await pool.request()
-      .query(`SELECT 
-        service_id,
-        carrier,
-        service_name,
-        est_days_min,
-        est_days_max,
-        base_fee,
-        per_kg_fee
-      FROM shipping_service
-      ORDER BY base_fee ASC, carrier ASC`);
-    
-    res.json({ services: result.recordset });
-  } catch (error) {
-    console.error('Get shipping services error:', error);
-    res.status(500).json({ error: 'Failed to get shipping services' });
-  }
-});
 
 // Tạo đơn hàng mới từ giỏ hàng
 router.post(
@@ -619,6 +619,63 @@ router.post(
         await pool.request()
           .input('cart_id', sql.BigInt, cartId)
           .query(`UPDATE cart SET status = 'CheckedOut' WHERE cart_id = @cart_id`);
+      }
+
+      // Create payment record
+      const paymentMethod = req.body.payment_method || 'Cash';
+      const paymentStatus = paymentMethod === 'Cash' ? 'Pending' : 'Pending'; // COD is pending until delivery
+      
+      await pool.request()
+        .input('order_id', sql.BigInt, orderId)
+        .input('amount', sql.Decimal(14, 2), totalAmount)
+        .input('payment_method', sql.NVarChar(50), paymentMethod)
+        .input('status', sql.NVarChar(20), paymentStatus)
+        .query(
+          `INSERT INTO payment (order_id, amount, payment_method, status)
+           VALUES (@order_id, @amount, @payment_method, @status)`
+        );
+
+      // Create invoice with 10% tax
+      const taxRate = 10.0;
+      const taxAmount = subtotal * (taxRate / 100);
+      const grandTotal = subtotal + taxAmount + shippingFee;
+      const invoiceNumber = `INV${String(orderId).padStart(8, '0')}`;
+      
+      const invoiceResult = await pool.request()
+        .input('order_id', sql.BigInt, orderId)
+        .input('invoice_number', sql.NVarChar(50), invoiceNumber)
+        .input('subtotal', sql.Decimal(14, 2), subtotal)
+        .input('tax_rate', sql.Decimal(5, 2), taxRate)
+        .input('tax_amount', sql.Decimal(14, 2), taxAmount)
+        .input('shipping_fee', sql.Decimal(12, 2), shippingFee)
+        .input('grand_total', sql.Decimal(14, 2), grandTotal)
+        .query(
+          `INSERT INTO invoice (order_id, invoice_number, subtotal, tax_rate, tax_amount, shipping_fee, grand_total, invoice_type, payment_status)
+           OUTPUT INSERTED.invoice_id
+           VALUES (@order_id, @invoice_number, @subtotal, @tax_rate, @tax_amount, @shipping_fee, @grand_total, 'Standard', 'Unpaid')`
+        );
+      
+      const invoiceId = invoiceResult.recordset[0].invoice_id;
+      
+      // Create invoice items
+      let invLineNo = 1;
+      for (const it of items) {
+        const itemTaxAmount = (Number(it.unit_price) * Number(it.qty)) * (taxRate / 100);
+        
+        await pool.request()
+          .input('invoice_id', sql.BigInt, invoiceId)
+          .input('line_no', sql.Int, invLineNo++)
+          .input('product_id', sql.BigInt, it.product_id)
+          .input('variant_code', sql.NVarChar(20), it.variant_code)
+          .input('description', sql.NVarChar(500), it.title || '')
+          .input('qty', sql.Int, it.qty)
+          .input('unit_price', sql.Decimal(12, 2), it.unit_price)
+          .input('tax_rate', sql.Decimal(5, 2), taxRate)
+          .input('tax_amount', sql.Decimal(12, 2), itemTaxAmount)
+          .query(
+            `INSERT INTO invoice_item (invoice_id, line_no, product_id, variant_code, description, qty, unit_price, tax_rate, tax_amount)
+             VALUES (@invoice_id, @line_no, @product_id, @variant_code, @description, @qty, @unit_price, @tax_rate, @tax_amount)`
+          );
       }
 
       res.status(201).json({

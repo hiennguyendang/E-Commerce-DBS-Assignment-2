@@ -42,7 +42,10 @@ export default function OrderDetailPage() {
         // Kiểm tra xem đã có yêu cầu đổi trả cho đơn này chưa
         try {
           const returnRes = await axiosInstance.get(`/returns/buyer`);
-          const existingReturn = (returnRes.data || []).find(
+          const returnsList = Array.isArray(returnRes.data?.requests)
+            ? returnRes.data.requests
+            : (Array.isArray(returnRes.data) ? returnRes.data : []);
+          const existingReturn = returnsList.find(
             (r) => r.order_id === parseInt(id, 10)
           );
           if (existingReturn) {
@@ -55,9 +58,10 @@ export default function OrderDetailPage() {
         // Kiểm tra xem đã review sản phẩm nào chưa
         try {
           const reviewRes = await axiosInstance.get(`/reviews/my-reviews`);
-          const orderReviews = (reviewRes.data || []).filter(
-            (r) => r.order_id === parseInt(id, 10)
-          );
+          const myReviews = Array.isArray(reviewRes.data?.reviews)
+            ? reviewRes.data.reviews
+            : (Array.isArray(reviewRes.data) ? reviewRes.data : []);
+          const orderReviews = myReviews.filter((r) => r.order_id === parseInt(id, 10));
           const reviewedLineNos = new Set(orderReviews.map(r => r.line_no));
           setReviewedItems(reviewedLineNos);
           
@@ -92,12 +96,29 @@ export default function OrderDetailPage() {
     setShowReviewModal(true);
   };
 
-  const handleReviewSuccess = () => {
+  const handleReviewSuccess = async () => {
     setShowReviewModal(false);
-    // Cập nhật danh sách đã review
-    if (selectedReviewItem) {
-      setReviewedItems(prev => new Set([...prev, selectedReviewItem.line_no]));
+    
+    // Fetch lại danh sách reviews từ server
+    try {
+      const reviewRes = await axiosInstance.get(`/reviews/my-reviews`);
+      const myReviews = Array.isArray(reviewRes.data?.reviews)
+        ? reviewRes.data.reviews
+        : (Array.isArray(reviewRes.data) ? reviewRes.data : []);
+      const orderReviews = myReviews.filter((r) => r.order_id === parseInt(id, 10));
+      const reviewedLineNos = new Set(orderReviews.map(r => r.line_no));
+      setReviewedItems(reviewedLineNos);
+      
+      // Store full review objects
+      const reviewsMap = {};
+      orderReviews.forEach(r => {
+        reviewsMap[r.line_no] = r;
+      });
+      setExistingReviews(reviewsMap);
+    } catch (err) {
+      console.error('Failed to refresh reviews:', err);
     }
+    
     setSelectedReviewItem(null);
   };
 
@@ -227,8 +248,8 @@ export default function OrderDetailPage() {
 
   const canViewInvoice = () => {
     if (!order) return false;
-    const status = (order.status || "").trim().toLowerCase();
-    return ["paid", "packing", "shipped", "completed"].includes(status);
+    // Allow viewing invoice from the moment order is created
+    return true;
   };
 
   const handleViewInvoice = async () => {
@@ -266,6 +287,12 @@ export default function OrderDetailPage() {
         </h4>
 
         <div className="d-flex gap-2">
+          {returnRequest && (
+            <div className="alert alert-warning py-2 px-3 mb-0">
+              <i className="bi bi-arrow-return-left me-2"></i>
+              Đã gửi yêu cầu đổi trả (trạng thái: {returnRequest.status})
+            </div>
+          )}
           {canViewInvoice() && (
             <button
               type="button"
@@ -540,13 +567,13 @@ export default function OrderDetailPage() {
                 )}
               </div>
             </div>
-          </div>
-        </div>
-      </div>
+         </div>
+       </div>
+     </div>
 
-      <div className="card">
-        <div className="card-body">
-          <h6 className="fw-bold mb-3">Sản phẩm</h6>
+     <div className="card">
+       <div className="card-body">
+         <h6 className="fw-bold mb-3">Sản phẩm</h6>
           <div className="table-responsive">
             <table className="table mb-0 align-middle">
               <thead>
@@ -572,14 +599,20 @@ export default function OrderDetailPage() {
                     {canReview() && (
                       <td>
                         {reviewedItems.has(it.line_no) ? (
-                          <button
-                            className="btn btn-sm btn-success"
-                            onClick={() => handleReviewClick(it)}
-                            title="Xem đánh giá của bạn"
-                          >
-                            <i className="bi bi-check-circle me-1"></i>
-                            Đã đánh giá
-                          </button>
+                          <div className="d-flex flex-column align-items-start">
+                            <button
+                              className="btn btn-sm btn-success mb-1"
+                              type="button"
+                              disabled
+                              title="Bạn đã đánh giá mục này"
+                            >
+                              <i className="bi bi-check-circle me-1"></i>
+                              Đã đánh giá
+                            </button>
+                            <small className="text-muted">
+                              Đánh giá của bạn đã gửi.
+                            </small>
+                          </div>
                         ) : (
                           <button
                             className="btn btn-sm btn-outline-primary"
@@ -612,7 +645,7 @@ export default function OrderDetailPage() {
               )}
             </div>
             <div className="fs-5 mt-2">
-              <span className="me-2">Tổng cộng:</span>
+              <span className="me-2">Tổng tiền (chưa bao gồm thuế):</span>
               <strong>{formatPrice(order.total)}</strong>
             </div>
           </div>
@@ -642,4 +675,3 @@ export default function OrderDetailPage() {
     </div>
   );
 }
-

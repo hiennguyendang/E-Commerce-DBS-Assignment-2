@@ -33,7 +33,19 @@ export default function ProductDetailPage({ onAddToCart }) {
         console.error("Failed to load product:", err);
       }
     }
+    
+    async function fetchReviewCount() {
+      try {
+        const res = await axiosInstance.get(`/products/${id}/reviews`);
+        const stats = res.data.stats || { total: 0 };
+        setReviewCount(stats.total);
+      } catch (err) {
+        console.error("Failed to load review count:", err);
+      }
+    }
+    
     fetchProduct();
+    fetchReviewCount();
   }, [id]);
 
   return (
@@ -76,6 +88,7 @@ export default function ProductDetailPage({ onAddToCart }) {
           {activeTab === "reviews" && product && (
             <div className="tab-pane fade show active">
               <ProductReviews 
+                key={`reviews-${id}-${activeTab}`}
                 productId={id} 
                 onStatsLoad={(stats) => setReviewCount(stats.total)}
               />

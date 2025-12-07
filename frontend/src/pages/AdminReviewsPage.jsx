@@ -32,7 +32,7 @@ export default function AdminReviewsPage() {
       if (filters.rating) params.rating = filters.rating;
       if (filters.search) params.search = filters.search;
 
-      const res = await axiosInstance.get("/reviews/admin/reviews", { params });
+      const res = await axiosInstance.get("/admin/reviews", { params });
       setReviews(res.data.reviews || []);
       setPagination(res.data.pagination || {});
     } catch (err) {
@@ -45,7 +45,7 @@ export default function AdminReviewsPage() {
 
   const loadStats = async () => {
     try {
-      const res = await axiosInstance.get("/reviews/admin/reviews/stats");
+      const res = await axiosInstance.get("/admin/reviews/stats");
       setStats(res.data);
     } catch (err) {
       console.error("Failed to load stats:", err);
@@ -57,7 +57,7 @@ export default function AdminReviewsPage() {
 
     try {
       setDeleting(reviewId);
-      await axiosInstance.delete(`/reviews/admin/reviews/${reviewId}`);
+      await axiosInstance.delete(`/admin/reviews/${reviewId}`);
       setReviews(reviews.filter((r) => r.review_id !== reviewId));
       loadStats(); // Refresh stats
     } catch (err) {

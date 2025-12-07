@@ -103,6 +103,14 @@ BEGIN
 END;
 GO
 
+-- Điền thông tin liên hệ seller từ user (nếu đang NULL)
+UPDATE s
+SET business_email = COALESCE(s.business_email, ua.email),
+    business_phone = COALESCE(s.business_phone, ua.phone_number)
+FROM dbo.seller s
+JOIN dbo.user_account ua ON ua.user_id = s.user_id;
+GO
+
 -- 4. Products (100 items)
 IF NOT EXISTS (SELECT 1 FROM dbo.product)
 BEGIN
@@ -352,21 +360,125 @@ BEGIN
 END;
 GO
 
--- 6. Product Variants & Images
-IF NOT EXISTS (SELECT 1 FROM dbo.product_variant)
+-- 6. Product Variants
+-- First, create DEFAULT variants for all products
+IF NOT EXISTS (SELECT 1 FROM dbo.product_variant WHERE variant_code = 'DEFAULT')
 BEGIN
-    -- Insert variants for all products
     INSERT INTO dbo.product_variant (product_id, variant_code, sku, list_price, stock_qty, is_active)
     SELECT 
-        product_id, 
-        'DEFAULT', 
-        CONCAT('SKU', RIGHT('0000' + CAST(product_id AS VARCHAR(10)), 4)), 
-        CAST(ABS(CHECKSUM(NEWID()) % 10000000) + 100000 AS DECIMAL(18,2)), -- Random price between 100k and 10.1M
-        ABS(CHECKSUM(NEWID()) % 100) + 10, -- Random stock 10-110
-        1
-    FROM dbo.product;
+        p.product_id,
+        'DEFAULT' AS variant_code,
+        CONCAT('SKU', RIGHT('0000' + CAST(p.product_id AS VARCHAR(10)), 4), 'D') AS sku,
+        CASE 
+            -- Electronics (higher prices)
+            WHEN p.title LIKE '%iPhone%' OR p.title LIKE '%MacBook%' OR p.title LIKE '%iPad%' THEN 25000000
+            WHEN p.title LIKE '%Samsung Galaxy S%' OR p.title LIKE '%Sony A7%' THEN 22000000
+            WHEN p.title LIKE '%Dell XPS%' OR p.title LIKE '%Canon EOS%' THEN 18000000
+            WHEN p.title LIKE '%PS5%' OR p.title LIKE '%Xbox%' THEN 12000000
+            WHEN p.title LIKE '%Watch%' OR p.title LIKE '%AirPods%' THEN 6000000
+            WHEN p.title LIKE '%Headphone%' OR p.title LIKE '%Speaker%' THEN 4000000
+            WHEN p.title LIKE '%GoPro%' OR p.title LIKE '%DJI%' THEN 8000000
+            WHEN p.title LIKE '%TV%' THEN 15000000
+            WHEN p.title LIKE '%Camera%' OR p.title LIKE N'%Camera%' THEN 2500000
+            
+            -- Fashion (medium prices)
+            WHEN p.title LIKE '%Nike%' OR p.title LIKE '%Adidas%' THEN 2500000
+            WHEN p.title LIKE '%Coat%' OR p.title LIKE '%Jacket%' THEN 1800000
+            WHEN p.title LIKE '%Jeans%' OR p.title LIKE '%Dress%' THEN 800000
+            WHEN p.title LIKE '%Shoes%' OR p.title LIKE '%Sneaker%' OR p.title LIKE '%Boots%' THEN 1200000
+            WHEN p.title LIKE '%T-Shirt%' OR p.title LIKE '%Polo%' THEN 450000
+            WHEN p.title LIKE '%Bag%' OR p.title LIKE '%Backpack%' THEN 900000
+            WHEN p.title LIKE '%Watch%' THEN 3000000
+            
+            -- Home & Living
+            WHEN p.title LIKE '%Sofa%' OR p.title LIKE '%Mattress%' THEN 8000000
+            WHEN p.title LIKE '%Table%' OR p.title LIKE '%Desk%' THEN 3500000
+            WHEN p.title LIKE '%Chair%' THEN 2000000
+            WHEN p.title LIKE '%Lamp%' THEN 350000
+            WHEN p.title LIKE '%Rug%' OR p.title LIKE '%Curtain%' THEN 600000
+            
+            -- Books & Stationery
+            WHEN p.title LIKE '%Harry Potter%' THEN 1500000
+            WHEN p.title LIKE '%Book%' THEN 250000
+            WHEN p.title LIKE '%Notebook%' OR p.title LIKE '%Pen%' THEN 120000
+            WHEN p.title LIKE '%Planner%' THEN 180000
+            
+            -- Sports & Outdoors
+            WHEN p.title LIKE '%Treadmill%' OR p.title LIKE '%Bike%' THEN 8000000
+            WHEN p.title LIKE '%Dumbbell%' OR p.title LIKE '%Yoga%' THEN 500000
+            WHEN p.title LIKE '%Tent%' OR p.title LIKE '%Golf%' THEN 4000000
+            WHEN p.title LIKE '%Ball%' OR p.title LIKE '%Racket%' THEN 350000
+            
+            -- Automotive
+            WHEN p.title LIKE N'%Bơm lốp%' OR p.title LIKE N'%Máy lọc%' THEN 650000
+            WHEN p.title LIKE N'%Bạt phủ%' OR p.title LIKE N'%Thảm lót%' THEN 450000
+            WHEN p.title LIKE N'%Bọc vô lăng%' OR p.title LIKE N'%Giá đỡ%' THEN 250000
+            WHEN p.title LIKE N'%Nước hoa%' OR p.title LIKE N'%Sạc%' THEN 180000
+            
+            -- Pet Supplies
+            WHEN p.title LIKE N'%Thức ăn%' OR p.title LIKE N'%Pate%' THEN 180000
+            WHEN p.title LIKE N'%Nhà vệ sinh%' OR p.title LIKE N'%Lồng%' THEN 450000
+            WHEN p.title LIKE N'%Cát vệ sinh%' OR p.title LIKE N'%Dây dắt%' THEN 120000
+            
+            ELSE 500000
+        END AS list_price,
+        CASE 
+            WHEN p.title LIKE '%iPhone%' OR p.title LIKE '%Samsung Galaxy S%' THEN 50
+            WHEN p.title LIKE '%MacBook%' OR p.title LIKE '%Dell%' THEN 30
+            WHEN p.title LIKE '%PS5%' OR p.title LIKE '%Xbox%' THEN 20
+            ELSE 100
+        END AS stock_qty,
+        1 AS is_active
+    FROM dbo.product p
+    WHERE NOT EXISTS (
+        SELECT 1 
+        FROM dbo.product_variant pv 
+        WHERE pv.product_id = p.product_id 
+        AND pv.variant_code = 'DEFAULT'
+    );
 END;
 GO
+
+-- Create additional color variants for popular electronics
+INSERT INTO dbo.product_variant (product_id, variant_code, sku, list_price, stock_qty, is_active)
+SELECT 
+    p.product_id,
+    v.variant_code,
+    v.sku,
+    v.list_price,
+    v.stock_qty,
+    1
+FROM dbo.product p
+CROSS APPLY (
+    SELECT TOP 1 
+        dv.list_price,
+        dv.stock_qty
+    FROM dbo.product_variant dv
+    WHERE dv.product_id = p.product_id
+    ORDER BY dv.variant_code
+) dv
+CROSS APPLY (
+    SELECT 
+        'RED' AS variant_code,
+        CONCAT('SKU', RIGHT('0000' + CAST(p.product_id AS VARCHAR(10)), 4), 'R') AS sku,
+        dv.list_price * 1.02 AS list_price,
+        dv.stock_qty + 5       AS stock_qty
+    UNION ALL
+    SELECT 
+        'BLUE' AS variant_code,
+        CONCAT('SKU', RIGHT('0000' + CAST(p.product_id AS VARCHAR(10)), 4), 'B'),
+        dv.list_price * 0.98 AS list_price,
+        dv.stock_qty + 3      AS stock_qty
+) v
+WHERE p.title IN (N'iPhone 15 Pro Max', N'Samsung Galaxy S24 Ultra', N'MacBook Pro M3 14"', N'Sony WH-1000XM5')
+  AND NOT EXISTS (
+      SELECT 1
+      FROM dbo.product_variant pv
+      WHERE pv.product_id = p.product_id
+        AND pv.variant_code = v.variant_code
+  );
+GO
+
 
 IF NOT EXISTS (SELECT 1 FROM dbo.product_image)
 BEGIN
@@ -534,29 +646,75 @@ SELECT @p3_o = product_id FROM dbo.product WHERE title = 'Sony WH-1000XM5';
 SELECT @p4_o = product_id FROM dbo.product WHERE title = 'Zara Wool Coat';
 SELECT @p5_o = product_id FROM dbo.product WHERE title = 'Harry Potter Set';
 
+-- Fallback to any products if specific ones not found
+IF @p1_o IS NULL SELECT TOP 1 @p1_o = product_id FROM dbo.product ORDER BY product_id;
+IF @p2_o IS NULL SELECT TOP 1 @p2_o = product_id FROM dbo.product WHERE product_id != @p1_o ORDER BY product_id;
+IF @p3_o IS NULL SELECT TOP 1 @p3_o = product_id FROM dbo.product WHERE product_id NOT IN (@p1_o, @p2_o) ORDER BY product_id;
+IF @p4_o IS NULL SELECT TOP 1 @p4_o = product_id FROM dbo.product WHERE product_id NOT IN (@p1_o, @p2_o, @p3_o) ORDER BY product_id;
+IF @p5_o IS NULL SELECT TOP 1 @p5_o = product_id FROM dbo.product WHERE product_id NOT IN (@p1_o, @p2_o, @p3_o, @p4_o) ORDER BY product_id;
+
 DECLARE @price1 DECIMAL(18,2), @price2 DECIMAL(18,2), @price3 DECIMAL(18,2), @price4 DECIMAL(18,2), @price5 DECIMAL(18,2);
-SELECT @price1 = list_price FROM dbo.product_variant WHERE product_id = @p1_o;
-SELECT @price2 = list_price FROM dbo.product_variant WHERE product_id = @p2_o;
-SELECT @price3 = list_price FROM dbo.product_variant WHERE product_id = @p3_o;
-SELECT @price4 = list_price FROM dbo.product_variant WHERE product_id = @p4_o;
-SELECT @price5 = list_price FROM dbo.product_variant WHERE product_id = @p5_o;
+DECLARE @var1 NVARCHAR(50), @var2 NVARCHAR(50), @var3 NVARCHAR(50), @var4 NVARCHAR(50), @var5 NVARCHAR(50);
+
+-- Get prices and variant codes (prefer DEFAULT variant if exists, otherwise first available)
+SELECT TOP 1 @price1 = list_price, @var1 = variant_code 
+FROM dbo.product_variant 
+WHERE product_id = @p1_o 
+ORDER BY CASE WHEN variant_code = 'DEFAULT' THEN 0 ELSE 1 END, variant_code;
+
+SELECT TOP 1 @price2 = list_price, @var2 = variant_code 
+FROM dbo.product_variant 
+WHERE product_id = @p2_o 
+ORDER BY CASE WHEN variant_code = 'DEFAULT' THEN 0 ELSE 1 END, variant_code;
+
+SELECT TOP 1 @price3 = list_price, @var3 = variant_code 
+FROM dbo.product_variant 
+WHERE product_id = @p3_o 
+ORDER BY CASE WHEN variant_code = 'DEFAULT' THEN 0 ELSE 1 END, variant_code;
+
+SELECT TOP 1 @price4 = list_price, @var4 = variant_code 
+FROM dbo.product_variant 
+WHERE product_id = @p4_o 
+ORDER BY CASE WHEN variant_code = 'DEFAULT' THEN 0 ELSE 1 END, variant_code;
+
+SELECT TOP 1 @price5 = list_price, @var5 = variant_code 
+FROM dbo.product_variant 
+WHERE product_id = @p5_o 
+ORDER BY CASE WHEN variant_code = 'DEFAULT' THEN 0 ELSE 1 END, variant_code;
+
+-- Set defaults if NULL
+SET @price1 = ISNULL(@price1, 100000);
+SET @price2 = ISNULL(@price2, 200000);
+SET @price3 = ISNULL(@price3, 150000);
+SET @price4 = ISNULL(@price4, 180000);
+SET @price5 = ISNULL(@price5, 120000);
+SET @var1 = ISNULL(@var1, 'DEFAULT');
+SET @var2 = ISNULL(@var2, 'DEFAULT');
+SET @var3 = ISNULL(@var3, 'DEFAULT');
+SET @var4 = ISNULL(@var4, 'DEFAULT');
+SET @var5 = ISNULL(@var5, 'DEFAULT');
 
 DECLARE @s1_o CHAR(6); SELECT @s1_o = seller_id FROM dbo.seller WHERE shop_name = 'Tech Store';
 
 IF NOT EXISTS (SELECT 1 FROM dbo.orders WHERE buyer_id = @b1_o AND status = 'Completed')
+   AND @p1_o IS NOT NULL AND @var1 IS NOT NULL
+   AND EXISTS (SELECT 1 FROM dbo.product_variant WHERE product_id = @p1_o AND variant_code = @var1)
 BEGIN
     DECLARE @subtotal1 DECIMAL(18,2) = @price1 * 1;
     DECLARE @total1    DECIMAL(18,2) = @subtotal1 + 30000;
-    INSERT INTO dbo.orders (buyer_id, seller_id, ship_to_address_id, ship_from_address_id, service_id, carrier_name, service_name, shipping_fee, status, total_amount)
-    VALUES (@b1_o, @s1_o, @addr1, @addr_seller, @svc, @carrier, @svc_name, 30000, 'Completed', @total1);
+    INSERT INTO dbo.orders (buyer_id, seller_id, ship_to_address_id, ship_from_address_id, service_id, carrier_name, service_name, shipping_fee, shipped_date, delivered_date, status, total_amount)
+    VALUES (@b1_o, @s1_o, @addr1, @addr_seller, @svc, @carrier, @svc_name, 30000, DATEADD(DAY,-2,SYSDATETIME()), DATEADD(DAY,-1,SYSDATETIME()), 'Completed', @total1);
     
     DECLARE @oid1 BIGINT = SCOPE_IDENTITY();
     INSERT INTO dbo.order_item (order_id, line_no, product_id, variant_code, qty, unit_price)
-    VALUES (@oid1, 1, @p1_o, 'DEFAULT', 1, @price1);
+    VALUES (@oid1, 1, @p1_o, @var1, 1, @price1);
 END;
 
 -- Order 2
 IF NOT EXISTS (SELECT 1 FROM dbo.orders WHERE buyer_id = @b2_o AND status = 'Paid')
+   AND @p2_o IS NOT NULL AND @var2 IS NOT NULL AND @p3_o IS NOT NULL AND @var3 IS NOT NULL
+   AND EXISTS (SELECT 1 FROM dbo.product_variant WHERE product_id = @p2_o AND variant_code = @var2)
+   AND EXISTS (SELECT 1 FROM dbo.product_variant WHERE product_id = @p3_o AND variant_code = @var3)
 BEGIN
     DECLARE @subtotal2 DECIMAL(18,2) = (@price2 * 1) + (@price3 * 2);
     DECLARE @total2    DECIMAL(18,2) = @subtotal2 + 50000;
@@ -565,25 +723,29 @@ BEGIN
     
     DECLARE @oid2 BIGINT = SCOPE_IDENTITY();
     INSERT INTO dbo.order_item (order_id, line_no, product_id, variant_code, qty, unit_price)
-    VALUES (@oid2, 1, @p2_o, 'DEFAULT', 1, @price2),
-           (@oid2, 2, @p3_o, 'DEFAULT', 2, @price3);
+    VALUES (@oid2, 1, @p2_o, @var2, 1, @price2),
+           (@oid2, 2, @p3_o, @var3, 2, @price3);
 END;
 
 -- Order 3
 IF NOT EXISTS (SELECT 1 FROM dbo.orders WHERE buyer_id = @b3_o AND status = 'Shipped')
+   AND @p4_o IS NOT NULL AND @var4 IS NOT NULL
+   AND EXISTS (SELECT 1 FROM dbo.product_variant WHERE product_id = @p4_o AND variant_code = @var4)
 BEGIN
     DECLARE @subtotal3 DECIMAL(18,2) = @price4 * 2;
     DECLARE @total3    DECIMAL(18,2) = @subtotal3 + 25000;
-    INSERT INTO dbo.orders (buyer_id, seller_id, ship_to_address_id, ship_from_address_id, service_id, carrier_name, service_name, shipping_fee, status, total_amount)
-    VALUES (@b3_o, @s1_o, @addr3, @addr_seller, @svc, @carrier, @svc_name, 25000, 'Shipped', @total3);
+    INSERT INTO dbo.orders (buyer_id, seller_id, ship_to_address_id, ship_from_address_id, service_id, carrier_name, service_name, shipping_fee, shipped_date, status, total_amount)
+    VALUES (@b3_o, @s1_o, @addr3, @addr_seller, @svc, @carrier, @svc_name, 25000, DATEADD(DAY,-1,SYSDATETIME()), 'Shipped', @total3);
     
     DECLARE @oid3 BIGINT = SCOPE_IDENTITY();
     INSERT INTO dbo.order_item (order_id, line_no, product_id, variant_code, qty, unit_price)
-    VALUES (@oid3, 1, @p4_o, 'DEFAULT', 2, @price4);
+    VALUES (@oid3, 1, @p4_o, @var4, 2, @price4);
 END;
 
 -- Order 4
 IF NOT EXISTS (SELECT 1 FROM dbo.orders WHERE buyer_id = @b1_o AND status = 'Pending')
+   AND @p5_o IS NOT NULL AND @var5 IS NOT NULL
+   AND EXISTS (SELECT 1 FROM dbo.product_variant WHERE product_id = @p5_o AND variant_code = @var5)
 BEGIN
     DECLARE @subtotal4 DECIMAL(18,2) = @price5 * 1;
     DECLARE @total4    DECIMAL(18,2) = @subtotal4; 
@@ -592,7 +754,7 @@ BEGIN
     
     DECLARE @oid4 BIGINT = SCOPE_IDENTITY();
     INSERT INTO dbo.order_item (order_id, line_no, product_id, variant_code, qty, unit_price)
-    VALUES (@oid4, 1, @p5_o, 'DEFAULT', 1, @price5);
+    VALUES (@oid4, 1, @p5_o, @var5, 1, @price5);
 END;
 GO
 
@@ -652,13 +814,71 @@ IF @oid1_r IS NOT NULL AND NOT EXISTS (SELECT 1 FROM dbo.review WHERE order_id =
     INSERT INTO dbo.review (order_id, line_no, buyer_id, rating, content, created_at)
     VALUES (@oid1_r, 1, @b1_r, 5, 'Amazing phone! Love the camera.', DATEADD(DAY, -10, SYSDATETIME()));
 
-IF @oid2_r IS NOT NULL AND NOT EXISTS (SELECT 1 FROM dbo.review WHERE order_id = @oid2_r)
+IF @oid2_r IS NOT NULL AND NOT EXISTS (SELECT 1 FROM dbo.review WHERE order_id = @oid2_r AND line_no = 1)
     INSERT INTO dbo.review (order_id, line_no, buyer_id, rating, content, created_at)
     VALUES (@oid2_r, 1, @b2_r, 4, 'Great laptop but expensive.', DATEADD(DAY, -8, SYSDATETIME()));
+
+IF @oid2_r IS NOT NULL AND NOT EXISTS (SELECT 1 FROM dbo.review WHERE order_id = @oid2_r AND line_no = 2)
+    INSERT INTO dbo.review (order_id, line_no, buyer_id, rating, content, created_at)
+    VALUES (@oid2_r, 2, @b2_r, 5, 'Best headphones I ever had!', DATEADD(DAY, -7, SYSDATETIME()));
 
 IF @oid3_r IS NOT NULL AND NOT EXISTS (SELECT 1 FROM dbo.review WHERE order_id = @oid3_r)
     INSERT INTO dbo.review (order_id, line_no, buyer_id, rating, content, created_at)
     VALUES (@oid3_r, 1, @b3_r, 5, 'Very warm coat, perfect fit.', DATEADD(DAY, -5, SYSDATETIME()));
+GO
+
+-- 12. Return requests (demo >=4 bản ghi)
+DECLARE @seller_user BIGINT;
+SELECT TOP 1 @seller_user = s.user_id FROM dbo.seller s ORDER BY s.seller_id;
+
+DECLARE @tbl_rr TABLE(
+    order_id BIGINT,
+    line_no INT,
+    buyer_id BIGINT,
+    reason NVARCHAR(500),
+    description NVARCHAR(MAX),
+    status NVARCHAR(50),
+    refund_amount DECIMAL(10,2) NULL,
+    request_date DATETIME2(0),
+    response_date DATETIME2(0) NULL,
+    refunded_at DATETIME2(0) NULL
+);
+
+-- Completed order -> Completed return
+DECLARE @oid_c BIGINT = (SELECT TOP 1 order_id FROM dbo.orders WHERE status = N'Completed' ORDER BY order_id);
+DECLARE @buyer_c BIGINT = (SELECT TOP 1 buyer_id FROM dbo.orders WHERE order_id = @oid_c);
+DECLARE @line_c INT = (SELECT TOP 1 line_no FROM dbo.order_item WHERE order_id = @oid_c);
+
+-- Paid order -> Pending
+DECLARE @oid_p BIGINT = (SELECT TOP 1 order_id FROM dbo.orders WHERE status = N'Paid' ORDER BY order_id);
+DECLARE @buyer_p BIGINT = (SELECT TOP 1 buyer_id FROM dbo.orders WHERE order_id = @oid_p);
+DECLARE @line_p INT = (SELECT TOP 1 line_no FROM dbo.order_item WHERE order_id = @oid_p);
+
+-- Shipped order -> Approved
+DECLARE @oid_s BIGINT = (SELECT TOP 1 order_id FROM dbo.orders WHERE status = N'Shipped' ORDER BY order_id);
+DECLARE @buyer_s BIGINT = (SELECT TOP 1 buyer_id FROM dbo.orders WHERE order_id = @oid_s);
+DECLARE @line_s INT = (SELECT TOP 1 line_no FROM dbo.order_item WHERE order_id = @oid_s);
+
+-- Pending order -> Rejected (demo)
+DECLARE @oid_r BIGINT = (SELECT TOP 1 order_id FROM dbo.orders WHERE status = N'Pending' ORDER BY order_id);
+DECLARE @buyer_r BIGINT = (SELECT TOP 1 buyer_id FROM dbo.orders WHERE order_id = @oid_r);
+DECLARE @line_r INT = (SELECT TOP 1 line_no FROM dbo.order_item WHERE order_id = @oid_r);
+
+INSERT INTO @tbl_rr
+SELECT @oid_p, @line_p, @buyer_p, N'Sản phẩm không đúng size/màu', N'Muốn đổi sang màu khác', N'Pending', NULL, DATEADD(DAY,-2,SYSDATETIME()), NULL, NULL WHERE @oid_p IS NOT NULL
+UNION ALL
+SELECT @oid_s, @line_s, @buyer_s, N'Hàng lỗi kỹ thuật', N'Bật không lên', N'Approved', NULL, DATEADD(DAY,-4,SYSDATETIME()), DATEADD(DAY,-3,SYSDATETIME()), NULL WHERE @oid_s IS NOT NULL
+UNION ALL
+SELECT @oid_c, @line_c, @buyer_c, N'Không ưng màu', N'Yêu cầu trả hàng, đã gửi lại', N'Completed', 500000, DATEADD(DAY,-6,SYSDATETIME()), DATEADD(DAY,-5,SYSDATETIME()), DATEADD(DAY,-4,SYSDATETIME()) WHERE @oid_c IS NOT NULL
+UNION ALL
+SELECT @oid_r, @line_r, @buyer_r, N'Đổi ý mua', N'Không cần nữa', N'Rejected', NULL, DATEADD(DAY,-1,SYSDATETIME()), DATEADD(DAY,-1,SYSDATETIME()), NULL WHERE @oid_r IS NOT NULL;
+
+INSERT INTO dbo.return_request (order_id, line_no, buyer_id, seller_id, reason, description, status, refund_amount, request_date, response_date, refunded_at)
+SELECT rr.order_id, rr.line_no, rr.buyer_id, @seller_user, rr.reason, rr.description, rr.status, rr.refund_amount, rr.request_date, rr.response_date, rr.refunded_at
+FROM @tbl_rr rr
+WHERE NOT EXISTS (
+    SELECT 1 FROM dbo.return_request r WHERE r.order_id = rr.order_id AND r.line_no = rr.line_no
+);
 GO
 
 
@@ -676,6 +896,12 @@ IF NOT EXISTS (SELECT 1 FROM dbo.cart WHERE buyer_id = @b2_c)
 
 IF NOT EXISTS (SELECT 1 FROM dbo.cart WHERE buyer_id = @b3_c)
     INSERT INTO dbo.cart (buyer_id, status, created_at) VALUES (@b3_c, 'Active', SYSDATETIME());
+
+-- Ensure all buyers have a cart (including buyer4 if any)
+INSERT INTO dbo.cart (buyer_id, status)
+SELECT b.user_id, N'Active'
+FROM dbo.buyer b
+WHERE NOT EXISTS (SELECT 1 FROM dbo.cart c WHERE c.buyer_id = b.user_id);
 
 -- Cart Items
 DECLARE @c1 BIGINT, @c2 BIGINT, @c3 BIGINT;
@@ -720,7 +946,7 @@ SELECT
     10.00 AS tax_rate,
     ROUND((o.total_amount - o.shipping_fee) * 0.10, 2) AS tax_amount,
     o.shipping_fee,
-    o.total_amount AS grand_total,
+    (o.total_amount - o.shipping_fee) + ROUND((o.total_amount - o.shipping_fee) * 0.10, 2) + o.shipping_fee AS grand_total,
     N'Standard' AS invoice_type,
     CASE 
         WHEN o.status IN (N'Paid', N'Packing', N'Shipped', N'Completed') THEN N'Paid'

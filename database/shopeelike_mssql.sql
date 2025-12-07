@@ -282,6 +282,22 @@ BEGIN
 END;
 GO
 
+-- Tự động tạo cart cho buyer mới
+CREATE TRIGGER dbo.tr_buyer_create_cart
+ON dbo.buyer
+AFTER INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    INSERT INTO dbo.cart (buyer_id, status)
+    SELECT i.user_id, N'Active'
+    FROM inserted i
+    WHERE NOT EXISTS (
+        SELECT 1 FROM dbo.cart c WHERE c.buyer_id = i.user_id
+    );
+END;
+GO
+
 CREATE TABLE dbo.cart_item (
     cart_id      BIGINT       NOT NULL,
     product_id   BIGINT       NOT NULL,

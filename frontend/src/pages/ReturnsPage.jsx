@@ -19,7 +19,8 @@ export default function ReturnsPage() {
     try {
       const res = await axiosInstance.get("/returns/buyer");
       console.log("Returns data:", res.data);
-      setReturns(Array.isArray(res.data) ? res.data : []);
+      const list = Array.isArray(res.data?.requests) ? res.data.requests : (Array.isArray(res.data) ? res.data : []);
+      setReturns(list);
     } catch (err) {
       console.error("Failed to fetch returns:", err);
       setError("Không thể tải danh sách đổi trả!");

@@ -79,10 +79,17 @@ export default function CheckoutPage() {
   const [cartItems, setCartItems] = useState([]);
   const [shippingServices, setShippingServices] = useState([]);
   const [selectedService, setSelectedService] = useState(null);
+  const [paymentMethod, setPaymentMethod] = useState('Cash');
   const [loading, setLoading] = useState(true);
+  const [shipLoadError, setShipLoadError] = useState("");
+  const [loadingServices, setLoadingServices] = useState(false);
+  const [servicesLoaded, setServicesLoaded] = useState(false);
   const [form, setForm] = useState({
     recipient_name: "",
     address: "",
+    line2: "",
+    ward: "",
+    district: "",
     phone: "",
     city: VN_CITIES[0],
     postal_code: "",
@@ -107,24 +114,34 @@ export default function CheckoutPage() {
         type: "error",
       });
     }
+    setLoading(false);
+  }, [location.state]);
+
+  const loadShippingServices = () => {
+    if (servicesLoaded || loadingServices) return;
     
-    // Load shipping services
+    setLoadingServices(true);
+    setShipLoadError("");
+    
     ordersAPI.getShippingServices()
       .then((res) => {
         const services = res.data.services || [];
         setShippingServices(services);
-        // Select first service by default
-        if (services.length > 0) {
+        setServicesLoaded(true);
+        if (services.length === 0) {
+          setShipLoadError("Không có dịch vụ vận chuyển khả dụng.");
+        } else if (services.length > 0 && !selectedService) {
           setSelectedService(services[0]);
         }
       })
       .catch((err) => {
         console.error('Failed to load shipping services:', err);
+        setShipLoadError("Không thể tải dịch vụ vận chuyển. Vui lòng thử lại.");
       })
       .finally(() => {
-        setLoading(false);
+        setLoadingServices(false);
       });
-  }, [location.state]);
+  };
 
   const handleChange = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -132,8 +149,8 @@ export default function CheckoutPage() {
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    if (!form.recipient_name || !form.phone || !form.address || !form.city) {
-      setError("Vui long dien day du thong tin giao hang.");
+    if (!form.recipient_name || !form.phone || !form.address || !form.city || !form.district) {
+      setError("Vui long dien day du thong tin giao hang (dia chi, phuong/xa, quan/huyen).");
       return;
     }
 
@@ -162,11 +179,15 @@ export default function CheckoutPage() {
           recipient_name: form.recipient_name,
           phone: form.phone,
           address: form.address,
+          line2: form.line2 || "",
+          ward: form.ward,
+          district: form.district,
           city: form.city,
           postal_code: form.postal_code || "",
           country: form.country || "VN",
         },
         service_id: selectedService.service_id,
+        payment_method: paymentMethod,
         selected_items: Array.isArray(state.selectedItemIds)
           ? state.selectedItemIds
           : [],
@@ -210,6 +231,7 @@ export default function CheckoutPage() {
       )}
 
       {error && <div className="alert alert-danger">{error}</div>}
+      {shipLoadError && <div className="alert alert-warning">{shipLoadError}</div>}
 
       {cartItems.length === 0 ? (
         <div className="text-center py-5">
@@ -247,11 +269,42 @@ export default function CheckoutPage() {
                   <textarea
                     className="form-control mb-2"
                     name="address"
-                    placeholder="Dia chi chi tiet"
+                    placeholder="Dia chi chi tiet (line1)"
                     value={form.address}
                     onChange={handleChange}
                     required
                   />
+                  <input
+                    type="text"
+                    className="form-control mb-2"
+                    name="line2"
+                    placeholder="Thong tin bo sung (line2, neu co)"
+                    value={form.line2}
+                    onChange={handleChange}
+                  />
+                  <div className="row">
+                    <div className="col-md-6">
+                      <input
+                        type="text"
+                        className="form-control mb-2"
+                        name="ward"
+                        placeholder="Phuong/Xa"
+                        value={form.ward}
+                        onChange={handleChange}
+                      />
+                    </div>
+                    <div className="col-md-6">
+                      <input
+                        type="text"
+                        className="form-control mb-2"
+                        name="district"
+                        placeholder="Quan/Huyen"
+                        value={form.district}
+                        onChange={handleChange}
+                        required
+                      />
+                    </div>
+                  </div>
                   <select
                     className="form-select mb-2"
                     name="city"
@@ -282,16 +335,40 @@ export default function CheckoutPage() {
                       const service = shippingServices.find(s => s.service_id === parseInt(e.target.value));
                       setSelectedService(service);
                     }}
+                    onFocus={loadShippingServices}
                     required
+                    disabled={loadingServices}
                   >
-                    {shippingServices.length === 0 && (
-                      <option value="">Dang tai...</option>
+                    {loadingServices && (
+                      <option value="">Đang tải dịch vụ vận chuyển...</option>
                     )}
-                    {shippingServices.map((service) => (
+                    {!loadingServices && shippingServices.length === 0 && (
+                      <option value="">Click để tải dịch vụ vận chuyển</option>
+                    )}
+                    {!loadingServices && shipLoadError && (
+                      <option value="">{shipLoadError}</option>
+                    )}
+                    {!loadingServices && shippingServices.map((service) => (
                       <option key={service.service_id} value={service.service_id}>
                         {service.carrier} - {service.service_name} ({service.est_days_min}-{service.est_days_max} ngay) - {Number(service.base_fee).toLocaleString('vi-VN')} VND
                       </option>
                     ))}
+                  </select>
+                  
+                  <label className="form-label mt-2"><strong>Phương thức thanh toán:</strong></label>
+                  <select
+                    className="form-select mb-3"
+                    value={paymentMethod}
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                    required
+                  >
+                    <option value="Cash">Tiền mặt (COD)</option>
+                    <option value="BankTransfer">Chuyển khoản ngân hàng</option>
+                    <option value="Momo">Ví MoMo</option>
+                    <option value="ZaloPay">ZaloPay</option>
+                    <option value="VNPay">VNPay</option>
+                    <option value="CreditCard">Thẻ tín dụng</option>
+                    <option value="DebitCard">Thẻ ghi nợ</option>
                   </select>
                   
                   <Button label="Dat hang" type="submit" disabled={submitting} />
@@ -334,6 +411,13 @@ export default function CheckoutPage() {
         <p>
           Dia chi: {form.address}, {form.city}
         </p>
+        <p>Phuong thuc thanh toan: <strong>{paymentMethod === 'Cash' ? 'Tiền mặt (COD)' : 
+          paymentMethod === 'BankTransfer' ? 'Chuyển khoản ngân hàng' :
+          paymentMethod === 'Momo' ? 'Ví MoMo' :
+          paymentMethod === 'ZaloPay' ? 'ZaloPay' :
+          paymentMethod === 'VNPay' ? 'VNPay' :
+          paymentMethod === 'CreditCard' ? 'Thẻ tín dụng' :
+          paymentMethod === 'DebitCard' ? 'Thẻ ghi nợ' : paymentMethod}</strong></p>
         <h5>
           Tong cong: {calcTotal().toLocaleString("vi-VN")}
           {" VND"}
@@ -349,4 +433,3 @@ export default function CheckoutPage() {
     </div>
   );
 }
-

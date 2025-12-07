@@ -83,6 +83,9 @@ export default function LoginForm({ onLogin }) {
           <b>Admin:</b> admin1@demo.com / <b>123</b>
         </small>
         <small className="text-muted d-block">
+          <b>sManager (DBA):</b> smanager@demo.com / <b>123</b>
+        </small>
+        <small className="text-muted d-block">
           <b>Buyer 1:</b> buyer1@demo.com / <b>123</b>
         </small>
         <small className="text-muted d-block">
@@ -98,4 +101,3 @@ export default function LoginForm({ onLogin }) {
     </form>
   );
 }
-
