@@ -50,10 +50,17 @@ router.get('/', async (req, res) => {
         p.title AS name,
         p.created_at,
         'active' AS status,
-        COALESCE((SELECT MIN(v.list_price) FROM product_variant v WHERE v.product_id = p.product_id AND v.is_active = 1), 0) AS min_price,
-        COALESCE((SELECT SUM(v.stock_qty) FROM product_variant v WHERE v.product_id = p.product_id AND v.is_active = 1), 0) AS stock_quantity,
+        ISNULL(v_agg.min_price, 0) AS min_price,
+        ISNULL(v_agg.stock_quantity, 0) AS stock_quantity,
         (SELECT TOP (1) img.url FROM product_image img WHERE img.product_id = p.product_id ORDER BY img.image_id ASC) AS primary_image
       FROM product p
+      OUTER APPLY (
+        SELECT 
+          MIN(v.list_price) as min_price, 
+          SUM(v.stock_qty) as stock_quantity 
+        FROM product_variant v 
+        WHERE v.product_id = p.product_id AND v.is_active = 1
+      ) v_agg
       WHERE ${where}
       ORDER BY ${sortKey === 'min_price' ? 'min_price' : sortKey} ${orderKey}
       OFFSET ${offset} ROWS FETCH NEXT ${limit} ROWS ONLY`;

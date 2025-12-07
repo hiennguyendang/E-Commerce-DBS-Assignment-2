@@ -15,6 +15,7 @@ import OrderDetailPage from "./pages/OrderDetailPage";
 import ProfilePage from "./pages/ProfilePage";
 import SellerDashboardPage from "./pages/SellerDashboardPage";
 import AdminDashboardPage from "./pages/AdminDashboardPage";
+import AdminReviewsPage from "./pages/AdminReviewsPage";
 import ReturnsPage from "./pages/ReturnsPage";
 import SellerReturnsPage from "./pages/SellerReturnsPage";
 import { cartAPI, getAuthToken, getUser, clearAuthData } from "./utils/api";
@@ -88,6 +89,7 @@ export default function App() {
             {user.role === "Seller" && <Route path="seller" element={<SellerDashboardPage />} />}
             {user.role === "Seller" && <Route path="seller/returns" element={<SellerReturnsPage />} />}
             {user.role === "Admin" && <Route path="admin" element={<AdminDashboardPage />} />}
+            {user.role === "Admin" && <Route path="admin/reviews" element={<AdminReviewsPage />} />}
           </Route>
 
           <Route path="*" element={<Navigate to="/app" replace />} />

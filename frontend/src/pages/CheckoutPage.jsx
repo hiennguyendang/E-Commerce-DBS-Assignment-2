@@ -77,6 +77,8 @@ export default function CheckoutPage() {
   const location = useLocation();
 
   const [cartItems, setCartItems] = useState([]);
+  const [shippingServices, setShippingServices] = useState([]);
+  const [selectedService, setSelectedService] = useState(null);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState({
     recipient_name: "",
@@ -99,14 +101,29 @@ export default function CheckoutPage() {
       state.selectedItems.length > 0
     ) {
       setCartItems(state.selectedItems);
-      setLoading(false);
     } else {
-      setLoading(false);
       setMessage({
         text: "Vui long quay lai gio hang va chon san pham can thanh toan.",
         type: "error",
       });
     }
+    
+    // Load shipping services
+    ordersAPI.getShippingServices()
+      .then((res) => {
+        const services = res.data.services || [];
+        setShippingServices(services);
+        // Select first service by default
+        if (services.length > 0) {
+          setSelectedService(services[0]);
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to load shipping services:', err);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   }, [location.state]);
 
   const handleChange = (e) =>
@@ -117,6 +134,11 @@ export default function CheckoutPage() {
 
     if (!form.recipient_name || !form.phone || !form.address || !form.city) {
       setError("Vui long dien day du thong tin giao hang.");
+      return;
+    }
+
+    if (!selectedService) {
+      setError("Vui long chon don vi van chuyen.");
       return;
     }
 
@@ -144,6 +166,7 @@ export default function CheckoutPage() {
           postal_code: form.postal_code || "",
           country: form.country || "VN",
         },
+        service_id: selectedService.service_id,
         selected_items: Array.isArray(state.selectedItemIds)
           ? state.selectedItemIds
           : [],
@@ -167,7 +190,7 @@ export default function CheckoutPage() {
 
   const calcSub = () =>
     cartItems.reduce((s, i) => s + i.price * i.quantity, 0);
-  const calcShip = () => (calcSub() > 500000 ? 0 : 50000);
+  const calcShip = () => selectedService ? Number(selectedService.base_fee) : 0;
   const calcTotal = () => calcSub() + calcShip();
 
   if (loading) return <Spinner message="Dang tai gio hang..." />;
@@ -250,6 +273,27 @@ export default function CheckoutPage() {
                     value={form.postal_code}
                     onChange={handleChange}
                   />
+                  
+                  <label className="form-label mt-2"><strong>Don vi van chuyen:</strong></label>
+                  <select
+                    className="form-select mb-3"
+                    value={selectedService?.service_id || ''}
+                    onChange={(e) => {
+                      const service = shippingServices.find(s => s.service_id === parseInt(e.target.value));
+                      setSelectedService(service);
+                    }}
+                    required
+                  >
+                    {shippingServices.length === 0 && (
+                      <option value="">Dang tai...</option>
+                    )}
+                    {shippingServices.map((service) => (
+                      <option key={service.service_id} value={service.service_id}>
+                        {service.carrier} - {service.service_name} ({service.est_days_min}-{service.est_days_max} ngay) - {Number(service.base_fee).toLocaleString('vi-VN')} VND
+                      </option>
+                    ))}
+                  </select>
+                  
                   <Button label="Dat hang" type="submit" disabled={submitting} />
                 </form>
               </div>

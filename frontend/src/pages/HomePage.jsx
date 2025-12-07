@@ -20,15 +20,21 @@ export default function HomePage({ onAddToCart }) {
   });
 
   const normalizeProducts = (list) =>
-    list.map((p) => ({
-      id: p.id,
-      name: p.name,
-      price: Number(p.price || p.min_price || 0),
-      image: p.primary_image || p.image || "",
-      rating: p.rating_average || 0,
-      reviews: p.rating_count || 0,
-      category_id: p.category_id,
-    }));
+    list.map((p) => {
+      const image =
+        p.primary_image ||
+        p.image ||
+        "https://placehold.co/300x200?text=No+Image";
+      return {
+        id: p.id,
+        name: p.name,
+        price: Number(p.price || p.min_price || 0),
+        image,
+        rating: p.rating_average || 0,
+        reviews: p.rating_count || 0,
+        category_id: p.category_id,
+      };
+    });
 
   useEffect(() => {
     async function fetchCategories() {
@@ -162,4 +168,3 @@ export default function HomePage({ onAddToCart }) {
     </>
   );
 }
-

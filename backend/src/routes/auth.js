@@ -143,7 +143,8 @@ router.post('/login', [
       `SELECT ua.user_id, ua.email, ua.password_hash, ua.display_name, ua.user_name, ua.phone_number,
               CASE WHEN a.user_id IS NOT NULL THEN 'Admin'
                    WHEN s.user_id IS NOT NULL THEN 'Seller'
-                   ELSE 'Customer' END AS role
+                   ELSE 'Customer' END AS role,
+              s.seller_id
        FROM user_account ua
        LEFT JOIN admin a ON a.user_id = ua.user_id
        LEFT JOIN seller s ON s.user_id = ua.user_id
@@ -182,17 +183,24 @@ router.post('/login', [
 
     // Return role as-is from database (lowercase: customer, seller, admin)
     // Frontend will handle display formatting
+    const userResponse = {
+      id: user.user_id,
+      email: user.email,
+      name: user.display_name,
+      role: user.role,  // Send DB role directly: customer, seller, admin
+      userName: user.user_name,
+      phone: user.phone_number
+    };
+
+    // Add seller_id if user is a seller
+    if (user.seller_id) {
+      userResponse.seller_id = user.seller_id;
+    }
+
     res.json({
       message: 'Login successful',
       token,
-      user: {
-        id: user.user_id,
-        email: user.email,
-        name: user.display_name,
-        role: user.role,  // Send DB role directly: customer, seller, admin
-        userName: user.user_name,
-        phone: user.phone_number
-      }
+      user: userResponse
     });
   } catch (error) {
     console.error('Login error:', error);

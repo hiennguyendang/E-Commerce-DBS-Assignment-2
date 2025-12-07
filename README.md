@@ -167,26 +167,59 @@ Nếu backend đổi port, cập nhật lại URL này rồi `npm start` lại.
 
 Sau khi seed dữ liệu bằng `shopeelike_mssql.sql` + `mockup_data_shopeelike_mssql.sql` (hoặc docker `db-init`), bạn có sẵn:
 
-- **Seller demo**
-  - Email: `seller1@demo.com`
-  - Password: `password123`
-  - Vai trò: Seller (nhiều sản phẩm demo, Seller Dashboard, thống kê gọi stored procedure).
+### 2.1. Tài khoản Seller
 
-- **Admin demo**
-  - Email: `admin1@demo.com`
-  - Password: `password123`
-  - Vai trò: Admin (quản lý user, sản phẩm, đơn hàng).
+| Email | Password | Mô tả |
+|-------|----------|-------|
+| seller1@demo.com | 123 | Tech Store - Shop công nghệ, có nhiều sản phẩm điện tử và ô tô |
+| seller2@demo.com | 123 | Fashion Hub - Shop thời trang |
+| seller3@demo.com | 123 | Home Decor Plus - Shop nội thất |
+| seller4@demo.com | 123 | Book World - Shop sách văn phòng phẩm |
+| seller5@demo.com | 123 | Sports Pro - Shop thể thao và thú cưng |
 
-- **Buyer demo**
-  - Email: `buyer1@demo.com`
-  - Email: `buyer2@demo.com`
-  - Email: `buyer3@demo.com`
-  - Password (giống nhau): `password123`
-  - Có thể dùng để:
-    - Đăng ký / đăng nhập role Customer
-    - Thêm sản phẩm vào giỏ, đặt hàng, xem lịch sử đơn
+**Chức năng Seller Dashboard:**
+- Quản lý sản phẩm (thêm, sửa, xóa)
+- Quản lý đơn hàng của shop (xem chi tiết, cập nhật trạng thái)
+- Xem thống kê doanh thu theo tháng (gọi stored procedure `sp_get_seller_monthly_revenue`)
+- Quản lý yêu cầu hoàn trả từ khách hàng
+- Cập nhật trạng thái đơn hàng (Shipped, Completed) - tự động ghi nhận ngày gửi hàng và ngày giao hàng
 
-Ngoài ra có thể tự đăng ký buyer mới từ màn hình `/register`.
+### 2.2. Tài khoản Admin
+
+| Email | Password | Vai trò |
+|-------|----------|---------|
+| admin1@demo.com | 123 | System Admin |
+| admin2@demo.com | 123 | Content Moderator |
+| admin3@demo.com | 123 | Support Agent |
+| admin4@demo.com | 123 | Finance Officer |
+
+**Chức năng Admin Dashboard:**
+- Quản lý người dùng (xem, tìm kiếm, xóa)
+- Quản lý sản phẩm (duyệt, chỉnh sửa, xóa)
+- Quản lý đơn hàng (xem tất cả, chi tiết, cập nhật trạng thái)
+- Quản lý đánh giá (xem, lọc theo rating, xóa đánh giá không phù hợp)
+- Thống kê tổng quan: users, sellers, products, orders, revenue, orders by status
+
+### 2.3. Tài khoản Buyer
+
+| Email | Password | Thông tin |
+|-------|----------|-----------|
+| buyer1@demo.com | 123 | Minh Nguyen - Silver member |
+| buyer2@demo.com | 123 | Lan Tran - Bronze member |
+| buyer3@demo.com | 123 | Quang Le - Gold member |
+| buyer4@demo.com | 123 | Hoa Pham - Platinum member |
+
+**Chức năng Buyer:**
+- Xem danh mục sản phẩm, lọc theo category, giá, tìm kiếm
+- Thêm sản phẩm vào giỏ hàng
+- Chọn địa chỉ giao hàng (hoặc thêm địa chỉ mới)
+- Chọn đơn vị vận chuyển (5 carriers: DefaultCarrier, VNPost, GHN, J&T Express, Grab Express)
+- Đặt hàng và thanh toán
+- Xem lịch sử đơn hàng (bao gồm ngày đặt, ngày gửi hàng, ngày giao hàng)
+- Đánh giá sản phẩm đã mua (chỉ với đơn hàng Completed)
+- Yêu cầu hoàn trả sản phẩm
+
+**Lưu ý:** Ngoài ra có thể tự đăng ký buyer mới từ màn hình `/register` hoặc đăng ký seller từ `/seller-register`.
 
 ---
 
@@ -239,38 +272,200 @@ E-Commerce-DBS-Assignment-2/
 ### Part 1 – Create Database
 
 - `database/shopeelike_mssql.sql` chứa đầy đủ DDL: PK, FK, CHECK, computed column, sequence, trigger…
-- `database/mockup_data_shopeelike_mssql.sql` seed dữ liệu phong phú: seller, nhiều buyer, products (multi‑category), orders, cart, voucher, review, shipment…
+- `database/mockup_data_shopeelike_mssql.sql` seed dữ liệu phong phú gồm:
+  - 5 sellers với shop riêng
+  - 4 buyers với loyalty levels khác nhau
+  - 4 admins với roles khác nhau
+  - 110+ products thuộc 10 categories (Electronics, Fashion, Home & Living, Books, Sports, Automotive, Pet Supplies, ...)
+  - 5 shipping services với giá và thời gian giao hàng khác nhau
+  - Orders mẫu với nhiều trạng thái (Pending, Paid, Shipped, Completed)
+  - Reviews, cart items, addresses, shipments, invoices, payments
 
 ### Part 2 – Functions / Procedures / Triggers
 
-Trong schema SQL Server có tối thiểu:
+Trong schema SQL Server có đầy đủ các yêu cầu:
 
-- **Functions**
-  - `fn_monthly_revenue(@p_year INT, @p_month INT)` – tính tổng doanh thu theo tháng/năm, có `IF` kiểm tra tham số hợp lệ.
-  - `fn_seller_total_sold(@p_seller_id CHAR(6))` – tính tổng số lượng sản phẩm đã bán của 1 seller, có kiểm tra seller tồn tại.
+#### **Functions**
+- `fn_monthly_revenue(@p_year INT, @p_month INT)` – tính tổng doanh thu theo tháng/năm, có `IF` kiểm tra tham số hợp lệ.
+- `fn_seller_total_sold(@p_seller_id CHAR(6))` – tính tổng số lượng sản phẩm đã bán của 1 seller, có kiểm tra seller tồn tại.
 
-- **Stored procedures**
-  - `sp_get_orders_by_status(@p_status NVARCHAR(20) = NULL)` – truy vấn orders + buyer + user_account, dùng `WHERE` + `ORDER BY` trên nhiều bảng.
-  - `sp_get_seller_monthly_revenue(@p_seller_id CHAR(6), @p_year INT)` – GROUP BY tháng, `SUM(oi.line_total)`, `HAVING` > 0, kiểm tra tham số, dùng `THROW` khi seller không tồn tại.
-  - `sp_get_seller_stats(@p_seller_id CHAR(6))` – nhiều subquery với `COUNT`, `SUM`, join >= 2 bảng, dùng tham số trong `WHERE`.
+#### **Stored Procedures**
+- `sp_get_orders_by_status(@p_status NVARCHAR(20) = NULL)` – truy vấn orders + buyer + user_account, dùng `WHERE` + `ORDER BY` trên nhiều bảng.
+- `sp_get_seller_monthly_revenue(@p_seller_id CHAR(6), @p_year INT)` – GROUP BY tháng, `SUM(oi.line_total)`, `HAVING` > 0, kiểm tra tham số, dùng `THROW` khi seller không tồn tại.
+- `sp_get_seller_stats(@p_seller_id CHAR(6))` – nhiều subquery với `COUNT`, `SUM`, join >= 2 bảng, dùng tham số trong `WHERE`.
 
-- **Triggers**
-  - `tr_seller_gen_id` – INSTEAD OF INSERT ON `seller`, tự sinh `seller_id` dạng `SEL001`, `SEL002`, … ⇒ ví dụ trigger sinh **derived column**.
-  - `tr_cart_set_updated_at` – AFTER UPDATE ON `cart`, tự set `updated_at = SYSDATETIME()`.
-  - `tr_order_item_update_total` – AFTER INSERT ON `order_item`, cập nhật `orders.total_amount = SUM(order_item.line_total) + shipping_fee`.
-  - `tr_cart_item_limit_qty` – AFTER INSERT/UPDATE ON `cart_item`, không cho phép `qty > 50`, nếu vi phạm thì `THROW` lỗi ⇒ trigger enforce **business rule**.
+#### **Triggers**
+- `tr_seller_gen_id` – INSTEAD OF INSERT ON `seller`, tự sinh `seller_id` dạng `SEL001`, `SEL002`, … ⇒ ví dụ trigger sinh **derived column**.
+- `tr_cart_set_updated_at` – AFTER UPDATE ON `cart`, tự set `updated_at = SYSDATETIME()`.
+- `tr_order_item_update_total` – AFTER INSERT ON `order_item`, cập nhật `orders.total_amount = SUM(order_item.line_total) + shipping_fee`.
+- `tr_cart_item_limit_qty` – AFTER INSERT/UPDATE ON `cart_item`, không cho phép `qty > 50`, nếu vi phạm thì `THROW` lỗi ⇒ trigger enforce **business rule**.
 
 Các object trên bao trùm đủ yêu cầu đề bài: WHERE/ORDER BY trên nhiều bảng, GROUP BY + HAVING, IF/THROW, validation tham số, derived column và business rule.
 
 ### Part 3 – Application
 
-- Web app (React) + API (Express) kết nối SQL Server qua user `shopee_user` (trong Docker) hoặc `shopeelike_user` (chạy native).
-- UI hỗ trợ:
-  - Login/logout, phân quyền Buyer / Seller / Admin.
-  - Buyer: xem danh mục, lọc sản phẩm, thêm vào giỏ, đặt hàng, xem lịch sử.
-  - Seller: quản lý sản phẩm (CRUD), xem đơn hàng theo shop, dashboard thống kê.
-  - Admin: quản lý users, sản phẩm, đơn hàng; xem thống kê tổng quan (users, sellers, products, orders, revenue, orders by status).
-- Một số endpoint report dùng stored procedure, ví dụ: `/api/reports/seller/stats` gọi `sp_get_seller_stats` và hiển thị trên Seller Dashboard.
+Web app full-stack với các tính năng chính:
 
-Khi viết report nộp bài, có thể trích nội dung chính từ README này để mô tả cách setup, kiến trúc và các thành phần đã triển khai. 
-*** End Patch*** }?>
+#### **Kiến trúc**
+- **Frontend:** React 18 + Vite, Bootstrap 5, Axios
+- **Backend:** Node.js + Express, JWT authentication, bcrypt password hashing
+- **Database:** Microsoft SQL Server 2022 với mssql driver
+- **Deployment:** Docker Compose orchestrating 4 containers (mssql, db-init, backend, frontend)
+
+#### **Chức năng chính đã triển khai**
+
+**Buyer Features:**
+- Đăng ký / đăng nhập với JWT authentication
+- Xem danh mục sản phẩm với filter (category, price range) và pagination
+- Tìm kiếm sản phẩm theo tên
+- Xem chi tiết sản phẩm với variant, images, reviews
+- Thêm sản phẩm vào giỏ hàng
+- Quản lý giỏ hàng (cập nhật số lượng, xóa item)
+- Chọn địa chỉ giao hàng (hoặc tạo địa chỉ mới)
+- **Chọn đơn vị vận chuyển** với 5 carriers và giá tính động
+- Đặt hàng với shipping fee tự động tính vào tổng tiền
+- Xem lịch sử đơn hàng với **timeline đầy đủ** (ngày đặt, ngày gửi, ngày giao)
+- Xem thông tin **người gửi (shop)** và **người nhận** trong chi tiết đơn hàng
+- Đánh giá sản phẩm (1-5 sao + nội dung) cho đơn hàng Completed
+- Xem lại đánh giá đã viết (read-only mode)
+- Yêu cầu hoàn trả sản phẩm với lý do chi tiết
+
+**Seller Features:**
+- Dashboard thống kê tổng quan (doanh thu, đơn hàng, sản phẩm)
+- Quản lý sản phẩm (CRUD operations)
+- Upload/quản lý hình ảnh sản phẩm
+- Quản lý variants (SKU, giá, tồn kho)
+- Xem đơn hàng của shop với filter theo status
+- **Cập nhật trạng thái đơn hàng** (Shipped, Completed)
+  - Tự động ghi nhận `shipped_date` khi chuyển sang Shipped
+  - Tự động ghi nhận `delivered_date` khi chuyển sang Completed
+- Xem biểu đồ doanh thu theo tháng (sử dụng `sp_get_seller_monthly_revenue`)
+- Quản lý yêu cầu hoàn trả từ khách hàng
+- Cập nhật địa chỉ kho hàng (ship_from_address)
+
+**Admin Features:**
+- Dashboard tổng quan hệ thống (users, sellers, products, orders, revenue)
+- Quản lý người dùng (xem, tìm kiếm, xóa)
+- Quản lý sản phẩm toàn hệ thống (duyệt, chỉnh sửa, xóa)
+- Quản lý đơn hàng (xem tất cả, filter, cập nhật status)
+- **Quản lý đánh giá:**
+  - Xem danh sách reviews với pagination
+  - Thống kê (tổng số, rating trung bình, phân bố rating)
+  - Filter theo rating (1-5 sao)
+  - Tìm kiếm theo tên sản phẩm hoặc buyer
+  - Xóa đánh giá không phù hợp
+- Thống kê orders by status (Pending, Paid, Shipped, Completed, ...)
+
+#### **Tích hợp Database Features**
+
+- **Stored Procedures:** API `/api/reports/seller/stats` gọi `sp_get_seller_stats` để hiển thị thống kê seller
+- **Functions:** Sử dụng trong queries để tính toán doanh thu
+- **Triggers:** Tự động hoạt động khi INSERT/UPDATE (seller_id auto-gen, cart updated_at, order total calculation)
+- **Computed Columns:** `line_total` trong order_item tự động tính từ `qty * unit_price`
+
+#### **Tính năng nổi bật**
+
+1. **Shipping System hoàn chỉnh:**
+   - 5 đơn vị vận chuyển với pricing khác nhau
+   - Tính phí ship dựa trên base_fee + per_kg_fee
+   - Hiển thị thời gian giao hàng ước tính (est_days_min - est_days_max)
+   - Lưu carrier_name và service_name vào đơn hàng
+
+2. **Order Tracking Timeline:**
+   - `order_date`: Khi khách đặt hàng
+   - `shipped_date`: Khi seller đánh dấu đã gửi hàng
+   - `delivered_date`: Khi đơn hàng hoàn thành
+   - Frontend hiển thị đầy đủ 3 mốc thời gian
+
+3. **Review System:**
+   - Review per order item (không phải per product)
+   - Chỉ buyer đã mua mới review được
+   - Admin có quyền xóa review
+   - Hiển thị read-only mode cho review đã viết
+
+4. **Authentication & Authorization:**
+   - JWT token với refresh mechanism
+   - Role-based access control (Buyer/Seller/Admin)
+   - Middleware kiểm tra ownership (chỉ seller của sản phẩm mới sửa được)
+
+---
+
+## 5. API Endpoints chính
+
+### Authentication
+- `POST /api/auth/register` - Đăng ký buyer mới
+- `POST /api/auth/seller-register` - Đăng ký seller
+- `POST /api/auth/login` - Đăng nhập
+- `GET /api/auth/profile` - Lấy thông tin user
+
+### Products
+- `GET /api/products` - Danh sách sản phẩm (filter, search, paginate)
+- `GET /api/products/:id` - Chi tiết sản phẩm
+- `POST /api/products` - Tạo sản phẩm mới (seller)
+- `PUT /api/products/:id` - Cập nhật sản phẩm (seller)
+
+### Cart
+- `GET /api/cart` - Lấy giỏ hàng
+- `POST /api/cart/items` - Thêm vào giỏ
+- `PUT /api/cart/items/:id` - Cập nhật số lượng
+- `DELETE /api/cart/items/:id` - Xóa khỏi giỏ
+
+### Orders
+- `GET /api/orders` - Danh sách đơn hàng
+- `GET /api/orders/:id` - Chi tiết đơn hàng (bao gồm sender_address, shipped_date, delivered_date)
+- `POST /api/orders` - Tạo đơn hàng mới
+- `PUT /api/orders/:id/status` - Cập nhật trạng thái (tự động set shipped_date/delivered_date)
+- `GET /api/orders/shipping-services` - Danh sách carriers
+
+### Reviews
+- `POST /api/reviews` - Tạo đánh giá
+- `GET /api/reviews/my-reviews` - Đánh giá của tôi
+- `GET /api/admin/reviews` - Admin xem tất cả (filter, search, paginate)
+- `GET /api/admin/reviews/stats` - Thống kê đánh giá
+- `DELETE /api/admin/reviews/:id` - Admin xóa đánh giá
+
+### Reports (Stored Procedures)
+- `GET /api/reports/seller/stats` - Gọi `sp_get_seller_stats`
+- `GET /api/reports/seller/monthly-revenue` - Gọi `sp_get_seller_monthly_revenue`
+
+---
+
+## 6. Testing & Demo
+
+### Kịch bản test đầy đủ
+
+1. **Setup:**
+   ```bat
+   docker compose down -v
+   docker compose up -d
+   ```
+
+2. **Buyer Flow:**
+   - Đăng nhập: buyer1@demo.com / 123
+   - Browse products, filter by category
+   - Add to cart
+   - Checkout, chọn shipping carrier (VNPost, GHN, ...)
+   - Place order
+   - View order detail → thấy shipping info đầy đủ
+
+3. **Seller Flow:**
+   - Đăng nhập: seller1@demo.com / 123
+   - View orders của shop
+   - Cập nhật order status → Shipped (tự động set shipped_date)
+   - Cập nhật order status → Completed (tự động set delivered_date)
+   - View monthly revenue chart
+
+4. **Buyer Review:**
+   - Quay lại buyer1@demo.com
+   - Vào order đã Completed
+   - Click "Đánh giá" → viết review
+   - Reload → thấy button "Đã đánh giá", click để xem lại
+
+5. **Admin Management:**
+   - Đăng nhập: admin1@demo.com / 123
+   - View review management
+   - Filter by rating, search
+   - Delete inappropriate review
+   - View dashboard statistics
+
+Khi viết report nộp bài, có thể trích nội dung chính từ README này để mô tả cách setup, kiến trúc và các thành phần đã triển khai.

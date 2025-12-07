@@ -459,4 +459,51 @@ router.get('/stats', authenticateToken, requireSeller, async (req, res) => {
   }
 });
 
+// Update order status (for sellers to manage their orders)
+router.put('/orders/:orderId/status', authenticateToken, requireSeller, async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { status } = req.body;
+
+    // Validate status
+    const validStatuses = ['Pending', 'Paid', 'Packing', 'Shipped', 'Completed', 'Cancelled'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ error: 'Invalid order status' });
+    }
+
+    const [sellers] = await pool.execute(
+      'SELECT seller_id FROM seller WHERE user_id = ?',
+      [req.user.id]
+    );
+
+    if (sellers.length === 0) {
+      return res.status(403).json({ error: 'User is not a seller' });
+    }
+
+    const sellerId = sellers[0].seller_id;
+
+    // Verify seller owns this order
+    const [orderCheck] = await pool.execute(
+      'SELECT order_id FROM orders WHERE order_id = ? AND seller_id = ?',
+      [orderId, sellerId]
+    );
+
+    if (orderCheck.length === 0) {
+      return res.status(403).json({ error: 'You do not have permission to update this order' });
+    }
+
+    // Update order status
+    await pool.execute(
+      'UPDATE orders SET status = ? WHERE order_id = ?',
+      [status, orderId]
+    );
+
+    res.json({ message: 'Order status updated successfully', status });
+  } catch (error) {
+    console.error('Update order status error:', error);
+    res.status(500).json({ error: 'Failed to update order status' });
+  }
+});
+
 module.exports = router;
+

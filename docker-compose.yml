@@ -30,8 +30,13 @@ services:
       - -c
       - |
         set -e
-        echo 'Waiting for SQL Server...'
-        sleep 25
+        echo 'Waiting for SQL Server (up to 90s)...'
+        for i in {1..30}; do
+          /opt/mssql-tools18/bin/sqlcmd -C -S mssql,1433 -U sa -P 'YourStrong!Passw0rd' -Q "SELECT 1" && break
+          echo "SQL Server not ready yet (try $$i/30)..."
+          sleep 3
+        done
+
         echo 'Checking if database "shopeelike" already exists...'
         DB_EXISTS=$(/opt/mssql-tools18/bin/sqlcmd -C -S mssql,1433 -U sa -P 'YourStrong!Passw0rd' -h -1 -W -Q "SET NOCOUNT ON; IF DB_ID('shopeelike') IS NOT NULL SELECT 1 ELSE SELECT 0;")
 

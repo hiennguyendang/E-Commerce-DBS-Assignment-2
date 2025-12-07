@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Spinner from "../components/common/Spinner";
-import { ordersAPI, formatDate, formatPrice } from "../utils/api";
+import { ordersAPI, formatDate, formatPrice, getUser } from "../utils/api";
 import ReturnRequestModal from "../components/order/ReturnRequestModal";
+import ReviewModal from "../components/order/ReviewModal";
 import axiosInstance from "../utils/axiosConfig";
 
 const renderVariant = (variant) =>
@@ -15,8 +16,22 @@ export default function OrderDetailPage() {
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
   const [showReturnModal, setShowReturnModal] = useState(false);
   const [returnRequest, setReturnRequest] = useState(null);
+
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [selectedReviewItem, setSelectedReviewItem] = useState(null);
+  const [reviewedItems, setReviewedItems] = useState(new Set());
+  const [existingReviews, setExistingReviews] = useState({});
+
+  const [invoice, setInvoice] = useState(null);
+  const [invoiceItems, setInvoiceItems] = useState([]);
+  const [invoiceError, setInvoiceError] = useState("");
+  const [loadingInvoice, setLoadingInvoice] = useState(false);
+
+  const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [newStatus, setNewStatus] = useState("");
 
   useEffect(() => {
     async function fetchDetail() {
@@ -24,17 +39,36 @@ export default function OrderDetailPage() {
         const res = await ordersAPI.getOrderById(id);
         setOrder(res.data);
 
-        // Check if return request exists for this order
+        // Kiểm tra xem đã có yêu cầu đổi trả cho đơn này chưa
         try {
           const returnRes = await axiosInstance.get(`/returns/buyer`);
-          const existingReturn = returnRes.data.find(
-            (r) => r.order_id === parseInt(id)
+          const existingReturn = (returnRes.data || []).find(
+            (r) => r.order_id === parseInt(id, 10)
           );
           if (existingReturn) {
             setReturnRequest(existingReturn);
           }
-        } catch (err) {
-          console.log("No return request found for this order");
+        } catch {
+          // bỏ qua lỗi phần đổi trả
+        }
+
+        // Kiểm tra xem đã review sản phẩm nào chưa
+        try {
+          const reviewRes = await axiosInstance.get(`/reviews/my-reviews`);
+          const orderReviews = (reviewRes.data || []).filter(
+            (r) => r.order_id === parseInt(id, 10)
+          );
+          const reviewedLineNos = new Set(orderReviews.map(r => r.line_no));
+          setReviewedItems(reviewedLineNos);
+          
+          // Store full review objects
+          const reviewsMap = {};
+          orderReviews.forEach(r => {
+            reviewsMap[r.line_no] = r;
+          });
+          setExistingReviews(reviewsMap);
+        } catch {
+          // bỏ qua lỗi phần review
         }
       } catch (err) {
         console.error("Không thể tải chi tiết đơn hàng:", err);
@@ -47,6 +81,38 @@ export default function OrderDetailPage() {
     }
     fetchDetail();
   }, [id]);
+
+  const handleReturnSuccess = () => {
+    setShowReturnModal(false);
+    window.location.reload();
+  };
+
+  const handleReviewClick = (item) => {
+    setSelectedReviewItem(item);
+    setShowReviewModal(true);
+  };
+
+  const handleReviewSuccess = () => {
+    setShowReviewModal(false);
+    // Cập nhật danh sách đã review
+    if (selectedReviewItem) {
+      setReviewedItems(prev => new Set([...prev, selectedReviewItem.line_no]));
+    }
+    setSelectedReviewItem(null);
+  };
+
+  const canReview = () => {
+    if (!order) return false;
+    
+    // Seller cannot review their own products
+    const currentUser = getUser();
+    if (currentUser && order.seller_id && currentUser.seller_id === order.seller_id) {
+      return false;
+    }
+    
+    // Only allow review when order is Completed or Delivered
+    return order.status === 'Completed' || order.status === 'Delivered';
+  };
 
   if (loading) {
     return <Spinner message="Đang tải chi tiết đơn hàng..." />;
@@ -78,62 +144,109 @@ export default function OrderDetailPage() {
           0
         );
 
-  // Check if order is eligible for return
+  // Điều kiện cho phép đổi trả
   const canReturn = () => {
     if (!order) return false;
-    
-    // Must be delivered or completed
-    const status = (order.status || '').trim().toLowerCase();
-    if (!['delivered', 'completed'].includes(status)) {
-      console.log('❌ Cannot return - status:', order.status);
+
+    // Check if current user is the seller of this order - sellers can't return their own orders
+    const currentUser = getUser();
+    if (currentUser && order.seller_id && currentUser.seller_id === order.seller_id) {
       return false;
     }
 
-    // Must not have existing return request
+    const status = (order.status || "").trim();
+    if (!["Delivered", "Completed"].includes(status)) {
+      return false;
+    }
+
     if (returnRequest) {
-      console.log('❌ Cannot return - already has return request');
       return false;
     }
 
-    // Must be within 7 days of delivery
     const deliveredDate = new Date(order.delivered_at || order.date);
     const now = new Date();
-    const daysSinceDelivery = Math.floor((now - deliveredDate) / (1000 * 60 * 60 * 24));
-    
-    console.log('✅ Can return:', { status: order.status, daysSinceDelivery });
+    const daysSinceDelivery = Math.floor(
+      (now - deliveredDate) / (1000 * 60 * 60 * 24)
+    );
+
     return daysSinceDelivery <= 7;
   };
 
   const getReturnButtonText = () => {
+    const currentUser = getUser();
+    if (currentUser && order && order.seller_id && currentUser.seller_id === order.seller_id) {
+      return null; // Don't show return button for sellers viewing their own orders
+    }
+
     if (returnRequest) {
       const statusMap = {
-        'Pending': '⏳ Chờ xác nhận',
-        'Approved': '✅ Đã chấp nhận',
-        'Rejected': '❌ Đã từ chối',
-        'Processing': '🔄 Đang xử lý',
-        'Completed': '✓ Hoàn tất',
-        'Cancelled': '🚫 Đã hủy'
+        Pending: "Chờ xác nhận",
+        Approved: "Đã chấp nhận",
+        Rejected: "Đã từ chối",
+        Processing: "Đang xử lý",
+        Completed: "Hoàn tất",
+        Cancelled: "Đã hủy",
       };
       return statusMap[returnRequest.status] || returnRequest.status;
     }
-    
-    const status = (order?.status || '').trim().toLowerCase();
-    if (!['delivered', 'completed'].includes(status)) {
-      return 'Chưa thể đổi trả';
+
+    const status = (order.status || "").trim();
+    if (!["Delivered", "Completed"].includes(status)) {
+      return "Chưa thể đổi trả";
     }
-    
+
     const deliveredDate = new Date(order.delivered_at || order.date);
     const now = new Date();
-    const daysSinceDelivery = Math.floor((now - deliveredDate) / (1000 * 60 * 60 * 24));
+    const daysSinceDelivery = Math.floor(
+      (now - deliveredDate) / (1000 * 60 * 60 * 24)
+    );
     if (daysSinceDelivery > 7) {
-      return 'Hết hạn đổi trả';
+      return "Hết hạn đổi trả";
     }
-    return 'Yêu cầu đổi trả';
+    return "Yêu cầu đổi trả";
   };
 
-  const handleReturnSuccess = () => {
-    // Reload order detail to get updated return request
-    window.location.reload();
+  const handleUpdateOrderStatus = async () => {
+    if (!newStatus) {
+      alert("Vui lòng chọn trạng thái mới");
+      return;
+    }
+
+    setUpdatingStatus(true);
+    try {
+      await axiosInstance.put(`/orders/${id}/status`, { status: newStatus });
+      alert("Cập nhật trạng thái đơn hàng thành công!");
+      window.location.reload();
+    } catch (err) {
+      console.error("Failed to update order status:", err);
+      alert(err.response?.data?.error || "Không thể cập nhật trạng thái đơn hàng");
+    } finally {
+      setUpdatingStatus(false);
+    }
+  };
+
+  const canViewInvoice = () => {
+    if (!order) return false;
+    const status = (order.status || "").trim().toLowerCase();
+    return ["paid", "packing", "shipped", "completed"].includes(status);
+  };
+
+  const handleViewInvoice = async () => {
+    setInvoiceError("");
+    setLoadingInvoice(true);
+    try {
+      const res = await axiosInstance.get(`/invoice/order/${id}`);
+      setInvoice(res.data.invoice);
+      setInvoiceItems(res.data.items || []);
+    } catch (err) {
+      console.error("Failed to load invoice:", err);
+      setInvoiceError(
+        err.response?.data?.error ||
+          "Không thể tải hóa đơn cho đơn hàng này."
+      );
+    } finally {
+      setLoadingInvoice(false);
+    }
   };
 
   return (
@@ -151,58 +264,146 @@ export default function OrderDetailPage() {
           <i className="bi bi-receipt me-2" />
           Chi tiết đơn hàng {order.code}
         </h4>
-        
-        <button
-          type="button"
-          className={`btn ${
-            returnRequest 
-              ? returnRequest.status === 'Rejected' || returnRequest.status === 'Cancelled'
-                ? 'btn-outline-danger'
-                : returnRequest.status === 'Completed'
-                ? 'btn-outline-success'
-                : 'btn-outline-warning'
-              : canReturn()
-              ? 'btn-warning'
-              : 'btn-outline-secondary'
-          }`}
-          onClick={() => {
-            alert('Nút được click!');
-            console.log('🔘 Return button clicked', { 
-              canReturn: canReturn(), 
-              order: order,
-              returnRequest: returnRequest 
-            });
-            if (canReturn()) {
-              alert('Đang mở modal đổi trả...');
-              setShowReturnModal(true);
-            } else {
-              alert('Đơn hàng chưa đủ điều kiện đổi trả hoặc đã quá hạn 7 ngày!');
-            }
-          }}
-        >
-          <i className="bi bi-arrow-return-left me-2"></i>
-          {getReturnButtonText()}
-        </button>
+
+        <div className="d-flex gap-2">
+          {canViewInvoice() && (
+            <button
+              type="button"
+              className="btn btn-outline-secondary"
+              onClick={handleViewInvoice}
+              disabled={loadingInvoice}
+            >
+              {loadingInvoice ? "Đang tải hóa đơn..." : "Xem hóa đơn"}
+            </button>
+          )}
+
+          {getReturnButtonText() && (
+            <button
+              type="button"
+              className={`btn ${
+                returnRequest
+                  ? returnRequest.status === "Rejected" ||
+                    returnRequest.status === "Cancelled"
+                    ? "btn-outline-danger"
+                    : returnRequest.status === "Completed"
+                    ? "btn-outline-success"
+                    : "btn-outline-warning"
+                  : canReturn()
+                  ? "btn-warning"
+                  : "btn-outline-secondary"
+              }`}
+              onClick={() => {
+                if (canReturn()) {
+                  setShowReturnModal(true);
+                } else {
+                  alert(
+                    "Đơn hàng chưa đủ điều kiện đổi trả hoặc đã quá 7 ngày!"
+                  );
+                }
+              }}
+            >
+              <i className="bi bi-arrow-return-left me-2"></i>
+              {getReturnButtonText()}
+            </button>
+          )}
+        </div>
       </div>
 
       {returnRequest && (
-        <div className={`alert ${
-          returnRequest.status === 'Rejected' || returnRequest.status === 'Cancelled'
-            ? 'alert-danger'
-            : returnRequest.status === 'Completed'
-            ? 'alert-success'
-            : 'alert-warning'
-        } py-2 mb-3`}>
+        <div
+          className={`alert ${
+            returnRequest.status === "Rejected" ||
+            returnRequest.status === "Cancelled"
+              ? "alert-danger"
+              : returnRequest.status === "Completed"
+              ? "alert-success"
+              : "alert-warning"
+          } py-2 mb-3`}
+        >
           <strong>Yêu cầu đổi trả:</strong> {returnRequest.reason}
-          {returnRequest.description && (
-            <> - {returnRequest.description}</>
-          )}
+          {returnRequest.description && <> - {returnRequest.description}</>}
           {returnRequest.seller_response && (
             <>
               <br />
-              <strong>Phản hồi từ Shop:</strong> {returnRequest.seller_response}
+              <strong>Phản hồi từ Shop:</strong>{" "}
+              {returnRequest.seller_response}
             </>
           )}
+        </div>
+      )}
+
+      {invoiceError && (
+        <div className="alert alert-danger py-2 mb-3">{invoiceError}</div>
+      )}
+
+      {invoice && (
+        <div className="card mb-4">
+          <div className="card-body">
+            <h6 className="fw-bold mb-3">
+              Hóa đơn {invoice.invoiceNumber}
+            </h6>
+            <div className="row">
+              <div className="col-md-6">
+                <p className="mb-1">
+                  <strong>Mã đơn:</strong> ORD
+                  {String(invoice.orderId).padStart(6, "0")}
+                </p>
+                <p className="mb-1">
+                  <strong>Ngày xuất hóa đơn:</strong>{" "}
+                  {formatDate(invoice.issueDate)}
+                </p>
+                <p className="mb-1">
+                  <strong>Trạng thái thanh toán:</strong>{" "}
+                  {invoice.paymentStatus}
+                </p>
+              </div>
+              <div className="col-md-6 text-md-end">
+                <p className="mb-1">
+                  <strong>Tạm tính:</strong>{" "}
+                  {formatPrice(invoice.subtotal || 0)}
+                </p>
+                <p className="mb-1">
+                  <strong>Thuế ({invoice.taxRate || 0}%):</strong>{" "}
+                  {formatPrice(invoice.taxAmount || 0)}
+                </p>
+                <p className="mb-1">
+                  <strong>Phí vận chuyển:</strong>{" "}
+                  {formatPrice(invoice.shippingFee || 0)}
+                </p>
+                <p className="mb-0 fs-5">
+                  <strong>Tổng cộng:</strong>{" "}
+                  {formatPrice(invoice.grandTotal || 0)}
+                </p>
+              </div>
+            </div>
+
+            {invoiceItems.length > 0 && (
+              <div className="table-responsive mt-3">
+                <table className="table table-sm mb-0 align-middle">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Sản phẩm</th>
+                      <th>Số lượng</th>
+                      <th>Đơn giá</th>
+                      <th>Thành tiền</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {invoiceItems.map((it) => (
+                      <tr key={it.lineNo}>
+                        <td>{it.lineNo}</td>
+                        <td>{it.description}</td>
+                        <td>{it.qty}</td>
+                        <td>{formatPrice(it.unitPrice)}</td>
+                        <td>{formatPrice(it.total)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -210,25 +411,81 @@ export default function OrderDetailPage() {
         <div className="col-md-6">
           <div className="card h-100">
             <div className="card-body">
-              <h6 className="card-title fw-bold mb-3">Thông tin đơn hàng</h6>
-              <p className="mb-1">
+              <h6 className="fw-bold mb-3">Thông tin đơn hàng</h6>
+              <p className="mb-2">
                 <strong>Mã đơn:</strong> {order.code}
               </p>
-              <p className="mb-1">
+              <p className="mb-2">
                 <strong>Ngày đặt:</strong> {formatDate(order.date)}
               </p>
-              <p className="mb-1">
-                <strong>Trạng thái:</strong>{" "}
-                <span className="badge bg-secondary">
-                  {order.status_label || order.status}
-                </span>
-              </p>
-              {order.seller && (
-                <p className="mb-0">
-                  <strong>Shop:</strong> {order.seller.shop_name} (
-                  {order.seller.id})
+              {order.shipped_date && (
+                <p className="mb-2">
+                  <strong>Ngày gửi hàng:</strong> {formatDate(order.shipped_date)}
                 </p>
               )}
+              {order.delivered_date && (
+                <p className="mb-2">
+                  <strong>Ngày giao hàng:</strong> {formatDate(order.delivered_date)}
+                </p>
+              )}
+              <p className="mb-2">
+                <strong>Trạng thái:</strong>{" "}
+                <span
+                  className={`badge ${
+                    order.status === "Pending"
+                      ? "bg-warning"
+                      : order.status === "Paid"
+                      ? "bg-info"
+                      : order.status === "Processing"
+                      ? "bg-primary"
+                      : order.status === "Completed"
+                      ? "bg-success"
+                      : "bg-secondary"
+                  }`}
+                >
+                  {order.status}
+                </span>
+              </p>
+              <p className="mb-2">
+                <strong>Shop:</strong> {order.shop_name || '-'}
+              </p>
+
+              {/* Seller can update order status */}
+              {(() => {
+                const currentUser = getUser();
+                const isSeller = currentUser && order.seller_id && currentUser.seller_id === order.seller_id;
+                if (isSeller) {
+                  return (
+                    <div className="mt-3 pt-3 border-top">
+                      <label className="form-label fw-bold">Cập nhật trạng thái đơn hàng:</label>
+                      <div className="input-group">
+                        <select 
+                          className="form-select" 
+                          value={newStatus} 
+                          onChange={(e) => setNewStatus(e.target.value)}
+                          disabled={updatingStatus}
+                        >
+                          <option value="">-- Chọn trạng thái --</option>
+                          <option value="Pending">Pending</option>
+                          <option value="Paid">Paid</option>
+                          <option value="Packing">Packing</option>
+                          <option value="Shipped">Shipped</option>
+                          <option value="Completed">Completed</option>
+                          <option value="Cancelled">Cancelled</option>
+                        </select>
+                        <button 
+                          className="btn btn-primary" 
+                          onClick={handleUpdateOrderStatus}
+                          disabled={updatingStatus || !newStatus}
+                        >
+                          {updatingStatus ? "Đang cập nhật..." : "Cập nhật"}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
             </div>
           </div>
         </div>
@@ -236,32 +493,52 @@ export default function OrderDetailPage() {
         <div className="col-md-6">
           <div className="card h-100">
             <div className="card-body">
-              <h6 className="card-title fw-bold mb-3">Thông tin giao hàng</h6>
-              {order.shipping_address ? (
-                <>
+              <h6 className="card-title fw-bold mb-3">
+                Thông tin giao hàng
+              </h6>
+              
+              {/* Người gửi */}
+              {order.sender_address && (
+                <div className="mb-3 pb-3 border-bottom">
+                  <h6 className="text-muted mb-2">
+                    <i className="bi bi-box-seam me-2"></i>Người gửi (Shop)
+                  </h6>
                   <p className="mb-1">
-                    <strong>Người nhận:</strong>{" "}
-                    {order.shipping_address.recipient_name}
+                    <strong>Tên:</strong> {order.sender_address.recipient_name}
                   </p>
                   <p className="mb-1">
-                    <strong>Số điện thoại:</strong>{" "}
-                    {order.shipping_address.phone}
-                  </p>
-                  <p className="mb-1">
-                    <strong>Địa chỉ:</strong>{" "}
-                    {order.shipping_address.address},{" "}
-                    {order.shipping_address.city}
+                    <strong>SĐT:</strong> {order.sender_address.phone}
                   </p>
                   <p className="mb-0">
-                    <strong>Mã bưu chính:</strong>{" "}
-                    {order.shipping_address.postal_code || "-"}
+                    <strong>Địa chỉ:</strong> {order.sender_address.address}, {order.sender_address.city}
                   </p>
-                </>
-              ) : (
-                <p className="mb-0 text-muted">
-                  Không có thông tin giao hàng.
-                </p>
+                </div>
               )}
+              
+              {/* Người nhận */}
+              <div>
+                <h6 className="text-muted mb-2">
+                  <i className="bi bi-geo-alt me-2"></i>Người nhận
+                </h6>
+                {order.shipping_address ? (
+                  <>
+                    <p className="mb-1">
+                      <strong>Tên:</strong> {order.shipping_address.recipient_name}
+                    </p>
+                    <p className="mb-1">
+                      <strong>SĐT:</strong> {order.shipping_address.phone}
+                    </p>
+                    <p className="mb-1">
+                      <strong>Địa chỉ:</strong> {order.shipping_address.address}, {order.shipping_address.city}
+                    </p>
+                    <p className="mb-0">
+                      <strong>Mã bưu chính:</strong> {order.shipping_address.postal_code || "-"}
+                    </p>
+                  </>
+                ) : (
+                  <p className="mb-0 text-muted">Không có thông tin giao hàng.</p>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -280,6 +557,7 @@ export default function OrderDetailPage() {
                   <th>Số lượng</th>
                   <th>Đơn giá</th>
                   <th>Thành tiền</th>
+                  {canReview() && <th>Đánh giá</th>}
                 </tr>
               </thead>
               <tbody>
@@ -291,6 +569,28 @@ export default function OrderDetailPage() {
                     <td>{it.qty}</td>
                     <td>{formatPrice(it.unit_price)}</td>
                     <td>{formatPrice(it.line_total)}</td>
+                    {canReview() && (
+                      <td>
+                        {reviewedItems.has(it.line_no) ? (
+                          <button
+                            className="btn btn-sm btn-success"
+                            onClick={() => handleReviewClick(it)}
+                            title="Xem đánh giá của bạn"
+                          >
+                            <i className="bi bi-check-circle me-1"></i>
+                            Đã đánh giá
+                          </button>
+                        ) : (
+                          <button
+                            className="btn btn-sm btn-outline-primary"
+                            onClick={() => handleReviewClick(it)}
+                          >
+                            <i className="bi bi-star me-1"></i>
+                            Viết đánh giá
+                          </button>
+                        )}
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -305,6 +605,11 @@ export default function OrderDetailPage() {
             <div>
               <span className="me-2">Phí vận chuyển:</span>
               <strong>{formatPrice(order.shipping_fee || 0)}</strong>
+              {order.carrier_name && (
+                <span className="text-muted ms-2">
+                  ({order.carrier_name} - {order.service_name})
+                </span>
+              )}
             </div>
             <div className="fs-5 mt-2">
               <span className="me-2">Tổng cộng:</span>
@@ -319,6 +624,19 @@ export default function OrderDetailPage() {
           order={order}
           onClose={() => setShowReturnModal(false)}
           onSuccess={handleReturnSuccess}
+        />
+      )}
+
+      {showReviewModal && selectedReviewItem && (
+        <ReviewModal
+          order={order}
+          orderItem={selectedReviewItem}
+          existingReview={existingReviews[selectedReviewItem.line_no]}
+          onClose={() => {
+            setShowReviewModal(false);
+            setSelectedReviewItem(null);
+          }}
+          onSuccess={handleReviewSuccess}
         />
       )}
     </div>

@@ -1,27 +1,30 @@
 const jwt = require('jsonwebtoken');
-const { pool } = require('../config/database');
+const { getPool } = require('../config/database');
+const sql = require('mssql');
 
 const loadUserWithRole = async (userId) => {
-  const [rows] = await pool.execute(
-    `SELECT 
-       ua.user_id,
-       ua.email,
-       ua.display_name,
-       ua.user_name,
-       ua.phone_number,
-       ua.created_at,
-       CASE 
-         WHEN a.user_id IS NOT NULL THEN 'Admin'
-         WHEN s.user_id IS NOT NULL THEN 'Seller'
-         ELSE 'Customer'
-       END AS role
-     FROM user_account ua
-     LEFT JOIN admin a ON a.user_id = ua.user_id
-     LEFT JOIN seller s ON s.user_id = ua.user_id
-     WHERE ua.user_id = ?`,
-    [userId]
-  );
-  return rows[0];
+  const pool = await getPool();
+  const result = await pool.request()
+    .input('user_id', sql.BigInt, userId)
+    .query(
+      `SELECT 
+         ua.user_id,
+         ua.email,
+         ua.display_name,
+         ua.user_name,
+         ua.phone_number,
+         ua.created_at,
+         CASE 
+           WHEN a.user_id IS NOT NULL THEN 'Admin'
+           WHEN s.user_id IS NOT NULL THEN 'Seller'
+           ELSE 'Customer'
+         END AS role
+       FROM user_account ua
+       LEFT JOIN admin a ON a.user_id = ua.user_id
+       LEFT JOIN seller s ON s.user_id = ua.user_id
+       WHERE ua.user_id = @user_id`
+    );
+  return result.recordset[0];
 };
 
 const authenticateToken = async (req, res, next) => {

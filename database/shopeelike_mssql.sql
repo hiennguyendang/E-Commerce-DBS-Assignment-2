@@ -1,6 +1,3 @@
--- Shopeelike schema for Microsoft SQL Server (T-SQL)
--- Adapted from MySQL schema (shopeelike.sql).
--- Updated with Invoice, Payment, and Return Request tables.
 
 IF DB_ID('shopeelike') IS NOT NULL
 BEGIN
@@ -310,8 +307,12 @@ CREATE TABLE dbo.orders (
     ship_to_address_id   BIGINT       NOT NULL,
     ship_from_address_id BIGINT       NOT NULL,
     service_id           SMALLINT     NOT NULL,
+    carrier_name         NVARCHAR(50) NULL,
+    service_name         NVARCHAR(80) NULL,
     shipping_fee         DECIMAL(12,2) NOT NULL CONSTRAINT DF_orders_shipping_fee DEFAULT (0),
     order_date           DATETIME2(0)  NOT NULL CONSTRAINT DF_orders_order_date DEFAULT SYSDATETIME(),
+    shipped_date         DATETIME2(0)  NULL,
+    delivered_date       DATETIME2(0)  NULL,
     status               NVARCHAR(20)  NOT NULL CONSTRAINT DF_orders_status DEFAULT N'Pending',
     total_amount         DECIMAL(14,2) NOT NULL CONSTRAINT DF_orders_total_amount DEFAULT (0),
     CONSTRAINT PK_orders PRIMARY KEY (order_id),
@@ -494,54 +495,8 @@ CREATE TABLE dbo.payment (
 GO
 
 ----------------------------------------------------
--- VOUCHERS
+-- VOUCHERS - REMOVED (Not implemented in this version)
 ----------------------------------------------------
-
-CREATE TABLE dbo.voucher (
-    voucher_id      BIGINT IDENTITY(1,1) NOT NULL,
-    code            NVARCHAR(20)  NOT NULL,
-    title           NVARCHAR(150) NOT NULL,
-    start_at        DATETIME2(0)  NOT NULL,
-    end_at          DATETIME2(0)  NOT NULL,
-    discount_type   NVARCHAR(10)  NOT NULL,
-    discount_value  DECIMAL(12,2) NOT NULL,
-    min_order_value DECIMAL(12,2) NOT NULL CONSTRAINT DF_voucher_min_order_value DEFAULT (0),
-    stackable       BIT           NOT NULL CONSTRAINT DF_voucher_stackable DEFAULT (1),
-    max_uses_per_buyer INT NULL,
-    CONSTRAINT PK_voucher PRIMARY KEY (voucher_id),
-    CONSTRAINT UQ_voucher_code UNIQUE (code),
-    CONSTRAINT CK_voucher_dates CHECK (end_at > start_at),
-    CONSTRAINT CK_voucher_discount_value CHECK (discount_value > 0),
-    CONSTRAINT CK_voucher_discount_type CHECK (discount_type IN (N'Percent', N'Fixed'))
-);
-GO
-
-CREATE TABLE dbo.voucher_product (
-    voucher_id BIGINT NOT NULL,
-    product_id BIGINT NOT NULL,
-    CONSTRAINT PK_voucher_product PRIMARY KEY (voucher_id, product_id),
-    CONSTRAINT FK_vp_v FOREIGN KEY (voucher_id) REFERENCES dbo.voucher(voucher_id) ON DELETE CASCADE,
-    CONSTRAINT FK_vp_p FOREIGN KEY (product_id) REFERENCES dbo.product(product_id) ON DELETE CASCADE
-);
-GO
-
-CREATE TABLE dbo.voucher_seller (
-    voucher_id BIGINT NOT NULL,
-    seller_id  CHAR(6) NOT NULL,
-    CONSTRAINT PK_voucher_seller PRIMARY KEY (voucher_id, seller_id),
-    CONSTRAINT FK_vs_v FOREIGN KEY (voucher_id) REFERENCES dbo.voucher(voucher_id) ON DELETE CASCADE,
-    CONSTRAINT FK_vs_s FOREIGN KEY (seller_id)  REFERENCES dbo.seller(seller_id)  ON DELETE CASCADE
-);
-GO
-
-CREATE TABLE dbo.voucher_category (
-    voucher_id  BIGINT NOT NULL,
-    category_id BIGINT NOT NULL,
-    CONSTRAINT PK_voucher_category PRIMARY KEY (voucher_id, category_id),
-    CONSTRAINT FK_vc_v FOREIGN KEY (voucher_id)  REFERENCES dbo.voucher(voucher_id)   ON DELETE CASCADE,
-    CONSTRAINT FK_vc_c FOREIGN KEY (category_id) REFERENCES dbo.category(category_id) ON DELETE CASCADE
-);
-GO
 
 CREATE TABLE dbo.order_voucher (
     order_id       BIGINT       NOT NULL,

@@ -15,7 +15,11 @@ const limiter = rateLimit({
   max: 100,
   message: 'Too many requests from this IP, please try again later.',
 });
-app.use('/api/', limiter);
+
+// Disable rate limiting in development to avoid blocking local testing
+if (process.env.NODE_ENV === 'production') {
+  app.use('/api/', limiter);
+}
 
 app.use(
   cors({
@@ -41,6 +45,7 @@ app.use('/api/users', require('./routes/users'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/seller', require('./routes/seller'));
 app.use('/api/reports', require('./routes/reports'));
+app.use('/api', require('./routes/reviews'));
 
 app.get('/api/health', (req, res) => {
   res.status(200).json({

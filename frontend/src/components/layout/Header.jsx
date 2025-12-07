@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import SearchBar from "../common/SearchBar";
 import axiosInstance from "../../utils/axiosConfig";
 
 export default function Header({ user, onLogout }) {
   const [cartCount, setCartCount] = useState(0);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (user) {
@@ -52,7 +53,7 @@ export default function Header({ user, onLogout }) {
           <div className="flex-grow-1 mx-4 d-none d-md-block">
             <SearchBar
               placeholder="Tim san pham, danh muc hoac shop..."
-              onSearch={(kw) => console.log("Tu khoa:", kw)}
+              onSearch={(kw) => navigate(`/app?search=${encodeURIComponent(kw)}`)}
             />
           </div>
 

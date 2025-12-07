@@ -178,6 +178,7 @@ const initDatabase = async () => {
 
 module.exports = {
   pool,
+  getPool,
   testConnection,
   initDatabase,
 };

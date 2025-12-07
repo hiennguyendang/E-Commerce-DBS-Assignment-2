@@ -232,6 +232,14 @@ export default function AdminDashboardPage() {
             Quản lý đơn hàng
           </button>
         </li>
+        <li className="nav-item">
+          <button
+            className="nav-link"
+            onClick={() => navigate("/app/admin/reviews")}
+          >
+            Quản lý đánh giá
+          </button>
+        </li>
       </ul>
 
       {/* Stats */}

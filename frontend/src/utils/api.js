@@ -35,6 +35,7 @@ export const ordersAPI = {
   getOrderById: (id) => axiosInstance.get(`/orders/${id}`),
   createOrder: (orderData) => axiosInstance.post('/orders', orderData),
   cancelOrder: (id) => axiosInstance.put(`/orders/${id}/cancel`),
+  getShippingServices: () => axiosInstance.get('/orders/shipping-services'),
 };
 
 export const formatPrice = (price) => {
