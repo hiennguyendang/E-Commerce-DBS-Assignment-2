@@ -1,0 +1,606 @@
+:root{
+  /* Màu chủ đạo mới: xanh dương rất nhẹ */
+  --color-primary: #93c5fd;
+
+  --site-max: 1440px;                 
+  --site-pad: clamp(10px, 2vw, 22px); 
+}
+
+*{ box-sizing:border-box; }
+html,body,#root{ height:100%; }
+body{ font-family: 'Nunito', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+
+.app-shell{ min-height:100vh; display:flex; flex-direction:column; }
+
+/* ===== Container ===== */
+.inner{
+  max-width: var(--site-max);
+  margin: 0 auto;
+  padding-inline: var(--site-pad);   
+}
+
+/* ===== Top bar ===== */
+.bk-topbar{
+  background: #ffffff;
+  color:#111827;
+  border-bottom:1px solid #e5e7eb;
+}
+.bk-topbar .inner{
+  padding-block: 12px;             
+}
+.topbar-rail{ display:flex; align-items:center; justify-content:space-between; }
+.left-rail{ display:flex; align-items:center; gap:12px; }
+.bk-logo{ height:28px; width:auto; display:block; }
+.bk-title{ font-weight:700; letter-spacing:.2px; font-size:20px; line-height:1.2; }
+
+/* ===== User card ===== */
+.user-card{
+  display:flex; align-items:center; gap:12px;
+  background: rgba(255,255,255,.92);
+  color:#0f172a;
+  border:1px solid rgba(255,255,255,.85);
+  border-radius:16px; padding:8px 12px;
+  box-shadow:0 10px 20px rgba(2,6,23,.12), 0 2px 6px rgba(2,6,23,.08);
+  text-decoration:none;
+  cursor:pointer;
+}
+.user-card:hover{
+  box-shadow:0 14px 28px rgba(2,6,23,.16), 0 3px 8px rgba(2,6,23,.10);
+  transform:translateY(-1px);
+}
+.user-card__avatar{
+  width:36px; height:36px; border-radius:50%; object-fit:cover;
+  border:2px solid rgba(25,118,210,.35);
+}
+.user-card__meta{ display:flex; flex-direction:column; line-height:1.05; text-align:right; }
+.user-card__name{ font-weight:800; font-size:14.5px; }
+.user-card__role{ font-size:12px; color:#475569; }
+.user-card__chev{ font-size:16px; color:#334155; }
+
+@media (max-width: 576px){
+  .bk-title{ font-size:16px; }
+  .user-card__role{ display:none; }
+  .user-card{ padding:6px 10px; gap:10px; }
+  .user-card__avatar{ width:32px; height:32px; }
+}
+
+/* ===== Footer ===== */
+.bk-footer{
+  background: #e5e7eb; color:#111827; border-top:1px solid #d1d5db;
+}
+.bk-footer .inner{
+  padding-block: 10px;
+  font-size:14px;
+}
+
+/* ===== Login stage ===== */
+.bk-stage{
+  position:relative; flex:1; display:flex; align-items:center;
+  background: #f8fafc;
+}
+.bk-stage::after{
+  content:""; position:absolute; inset:0;
+  background: linear-gradient(120deg, rgba(25,118,210,.10), rgba(66,165,245,.06));
+  pointer-events:none;
+}
+.stage-inner{
+  position:relative; z-index:1; width:100%;
+  max-width: var(--site-max);
+  margin:0 auto;
+  padding: clamp(24px,6vh,56px) var(--site-pad);
+}
+
+/* Login card */
+.login-card{
+  width:100%;
+  max-width: 680px;
+  background: linear-gradient(180deg, rgba(255,255,255,.85), rgba(255,255,255,.66));
+  border: 1px solid rgba(13,71,161,.22);
+  border-radius: 22px;
+  box-shadow: 0 24px 60px rgba(13,71,161,.20);
+  backdrop-filter: blur(10px);
+  color:#0f172a;
+  padding: 26px 26px 30px;
+}
+.login-heading{ font-weight:800; font-size:28px; line-height:1.2; margin-bottom:.35rem; }
+.login-sub{ color:#475569; font-size:14px; margin-bottom:18px; }
+
+.login-card .form-label{ color:#334155; font-weight:700; margin-bottom:.35rem; }
+.login-card .form-control{
+  color:#0f172a;
+  background:#f1f5f9;
+  border: 1px solid rgba(13,71,161,.22);
+  border-radius:14px;
+  padding:.95rem 1rem;
+  transition: box-shadow .15s ease, background .15s ease, border-color .15s ease;
+}
+.login-card .form-control::placeholder{ color:#94a3b8; }
+.login-card .form-control:focus{
+  background:#ffffff;
+  border-color: rgba(13,71,161,.38);
+}
+.login-card .form-control:hover{
+  border-color: rgba(13,71,161,.32);
+  background:#ffffff;
+}
+
+/* Buttons */
+.btn-bk{ background: var(--bk-blue-600); border:none; border-radius:14px; padding:.9rem 1rem; font-weight:700; }
+.btn-bk:hover{ background: var(--bk-blue-700); }
+.btn-round{ border-radius:14px !important; }
+
+a.link-muted{ color:#0f172a; opacity:.7; text-decoration:none; }
+a.link-muted:hover{ opacity:1; text-decoration:underline; }
+
+.form-scrim{ display:none !important; }
+
+/* ===== Secondary top nav ===== */
+.nav-secondary{
+  background:#fff; border-bottom:1px solid rgba(0,0,0,.08);
+}
+.nav-secondary .inner{
+  padding-inline: var(--site-pad);
+}
+.nav-secondary .nav-link{
+  color:#334155; font-weight:600; padding:14px 14px; border-bottom:2px solid transparent;
+}
+.nav-secondary .nav-link:hover{ color:#0d47a1; }
+.nav-secondary .nav-link.active{ color:#0d47a1; border-color:#0d47a1; }
+
+/* ===== Dashboard layout ===== */
+.dashboard-stage{ background:#f8fafc; flex:1; }
+.dashboard-stage .inner{
+  padding: 18px var(--site-pad) 32px;
+}
+
+/* ===== Sidebar & filter ===== */
+.sidebar{ position:sticky; top:72px; }
+.filter-card{
+  background:#fff; border:1px solid rgba(0,0,0,.06);
+  border-radius:16px; padding:16px;
+  box-shadow:0 8px 24px rgba(2,6,23,.06);
+}
+.filter-card .form-control, .filter-card .form-select{
+  background:#f1f5f9; border:1px solid transparent; border-radius:12px; padding:.7rem .85rem;
+}
+.filter-card .form-control:focus, .filter-card .form-select:focus{
+  outline:none; box-shadow:0 0 0 2px rgba(66,165,245,.35); background:#fff;
+}
+
+/* ===== Composer & Post cards ===== */
+.composer, .post-card{
+  background:#fff; border:1px solid rgba(0,0,0,.06);
+  border-radius:16px; padding:14px 16px;
+  box-shadow:0 12px 26px rgba(2,6,23,.06);
+}
+.composer textarea.form-control{
+  min-height:72px; resize:vertical; border-radius:12px;
+  background:#f8fafc; border:1px solid transparent;
+}
+.composer textarea.form-control:focus{
+  outline:none; box-shadow:0 0 0 2px rgba(66,165,245,.35); background:#fff;
+}
+
+.post-header{ display:flex; gap:12px; align-items:flex-start; }
+.post-avatar{ width:46px; height:46px; border-radius:50%; object-fit:cover; }
+.post-author{ font-weight:700; color:#0f172a; }
+.post-meta{ color:#64748b; font-size:.9rem; }
+.post-content{ color:#0f172a; font-size:1rem; line-height:1.5; margin-top:6px; }
+.post-actions .btn{ padding:.25rem .5rem; font-weight:600; color:#334155; }
+.post-actions .btn:hover{ color:#0d47a1; background:rgba(13,71,161,.06); border-radius:10px; }
+
+.badge-tag{ background:#e3f2fd; color:#0d47a1; font-weight:600; border-radius:999px; }
+
+/* ===== Matching ===== */
+.suggest-panel{
+  position:absolute; left:0; right:0; top:100%; z-index:20;
+  background:#fff; border:1px solid rgba(0,0,0,.08);
+  border-radius:14px; margin-top:6px; padding:10px;
+  box-shadow:0 20px 40px rgba(2,6,23,.12);
+}
+.suggest-section{ padding:8px 10px; }
+.suggest-section .title{ font-weight:700; color:#334155; font-size:.9rem; margin-bottom:6px; }
+.suggest-item{ display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:10px; cursor:pointer; }
+.suggest-item:hover{ background:#f1f5f9; }
+
+.rating i{ color:#f59e0b; }
+.tutor-tag{ background:#e3f2fd; color:#0d47a1; border-radius:999px; padding:2px 8px; font-weight:600; }
+
+.filters-disabled{ position:relative; }
+.filters-disabled::after{
+  content:"Đang dùng thanh tìm kiếm chính - bộ tiêu chí tạm vô hiệu";
+  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  background:rgba(255,255,255,.8); color:#334155; font-weight:700; text-align:center; border-radius:16px; padding:12px;
+  z-index:5;
+}
+.filters-disabled *{ pointer-events:none; user-select:none; }
+
+/* Simple modal */
+.bk-modal__backdrop{ position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:1050; display:flex; align-items:center; justify-content:center; }
+.bk-modal__card{ background:#fff; border-radius:16px; width:min(560px, 92vw); box-shadow:0 30px 60px rgba(2,6,23,.2); }
+.bk-modal__head{ padding:14px 16px; border-bottom:1px solid rgba(0,0,0,.06); font-weight:800;}
+.bk-modal__body{ padding:16px; }
+.bk-modal__foot{ padding:12px 16px; border-top:1px solid rgba(0,0,0,.06); display:flex; gap:10px; justify-content:flex-end; }
+
+/* Responsive tweaks */
+@media (max-width: 991.98px){
+  .sidebar{ position:static; top:auto; margin-bottom:16px; }
+  .suggest-panel{ right:-2px; left:-2px; }
+}
+
+/* ===== Tắt focus viền theo yêu cầu ===== */
+input:focus, textarea:focus, select:focus, button:focus,
+.form-control:focus, .form-select:focus {
+  outline: none !important;
+  box-shadow: none !important;
+  border-color: transparent !important;
+}
+
+/* ===== Messages sidebar ===== */
+.messages-sidebar .chat-list{
+  max-height: calc(100vh - 260px); 
+  overflow:auto;
+}
+
+.chat-item{
+  display:grid;
+  grid-template-columns: 44px 1fr auto; /* avatar | content | right (time/badge) */
+  align-items:center;
+  gap:10px;
+  width:100%;
+  padding:8px;
+  border:0;
+  border-radius:12px;
+  background:transparent;
+  text-align:left;
+}
+.chat-item:hover{ background:#f1f5f9; }
+.chat-item.unread .chat-name{ font-weight:800; }
+
+.chat-meta{ min-width:0; }
+
+.chat-top{ display:flex; align-items:baseline; gap:8px; }
+.chat-name{ font-weight:700; }
+
+.chat-item .badge{ margin-left:8px; }
+
+.chat-snippet{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+.chat-right{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;
+  gap:6px;
+  min-width:48px;
+}
+.chat-time{
+  white-space:nowrap;
+  color:#64748b;
+  font-size:12px;
+}
+
+.chat-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,.35); z-index:1050; }
+.chat-drawer{
+  position:fixed; top:0; right:0; height:100vh; width:min(380px, 96vw);
+  background:#fff; z-index:1060; box-shadow:-24px 0 60px rgba(2,6,23,.2);
+  display:flex; flex-direction:column;
+}
+.chat-header{ padding:12px 14px; border-bottom:1px solid rgba(0,0,0,.06); display:flex; align-items:center; justify-content:space-between; }
+.chat-body{ flex:1; overflow:auto; padding:16px; background:#f8fafc; }
+.chat-input{ padding:12px; display:flex; }
+
+.bubble-row{ display:flex; margin:6px 0; }
+.bubble-row.mine{ justify-content:flex-end; }
+.bubble{
+  max-width:75%; padding:10px 12px; border-radius:14px;
+  background:#e3f2fd; color:#0d47a1;
+}
+.bubble-row.mine .bubble{ background:#1976d2; color:#fff; }
+.bubble-time{ font-size:11px; opacity:.8; margin-top:2px; text-align:right; }
+
+.msg-search{
+  background:#f1f5f9;
+  border:1px solid rgba(13,71,161,.22);
+  border-radius:12px;
+  overflow:hidden;
+  transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+}
+.msg-search:focus-within{
+  background:#ffffff;
+  border-color: rgba(13,71,161,.38);
+  box-shadow: 0 0 0 2px rgba(66,165,245,.20);
+}
+.msg-search .input-group-text,
+.msg-search .form-control{
+  background:transparent;
+  border:0 !important;
+  box-shadow:none !important;
+}
+.msg-search .input-group-text{ color:#64748b; }
+.msg-search:focus-within .input-group-text{ color:#0d47a1; }
+
+.chat-avatar-wrap{
+  position:relative;
+  width:44px; height:44px;
+  border-radius:999px; overflow:hidden;   /* đảm bảo tròn */
+  flex:0 0 44px;
+}
+.chat-avatar{
+  width:100%; height:100%;
+  object-fit:cover;
+  border-radius:999px !important;
+  display:block;
+}
+.online-dot{
+  position:absolute; right:-1px; bottom:-1px;
+  width:10px; height:10px; background:#22c55e;
+  border-radius:50%; border:2px solid #fff;
+}
+
+/* --- Pending requests sidebar (right) --- */
+.pending-sidebar .req-list{
+  max-height: calc(100vh - 260px); /* để cuộn đẹp khi dài */
+  overflow: auto;
+}
+.req-item{
+  display: grid;
+  grid-template-columns: 44px 1fr auto; /* avatar | thông tin | cột phải */
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  border-radius: 12px;
+}
+.req-item:hover{ background:#f1f5f9; }
+
+.req-avatar{
+  width:44px; height:44px; border-radius:50%; object-fit:cover; display:block;
+}
+.req-meta{ min-width:0; }
+.req-right{
+  display:flex; flex-direction:column; align-items:flex-end; gap:6px; min-width:92px;
+}
+.req-time{ white-space:nowrap; }
+
+/* Icon button đồng bộ */
+.btn-icon{
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  border: 1px solid transparent;
+}
+
+/* Ghost danger: chỉ đỏ khi hover */
+.btn-ghost-danger{
+  background: transparent;
+  color: #ef4444;                /* red-500 */
+}
+.btn-ghost-danger:hover{
+  background: rgba(239,68,68,.08);
+  border-color: rgba(239,68,68,.20);
+}
+
+/* === Modal: luôn nổi cao nhất === */
+.bk-modal__backdrop{
+  position: fixed;        /* đã có rồi, giữ lại */
+  inset: 0;
+  z-index: 20000 !important;   /* tăng mạnh */
+}
+.bk-modal__card{
+  z-index: 20001;              /* chắc chắn nằm trên backdrop và mọi thứ */
+}
+
+.profile-avatar{
+  width:96px; height:96px; border-radius:50%; object-fit:cover;
+  border:3px solid rgba(25,118,210,.18);
+}
+
+.btn-icon{
+  width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center;
+  border-radius:8px; border:1px solid transparent; padding:0;
+}
+.btn-ghost-danger{ background:transparent; color:#ef4444; }
+.btn-ghost-danger:hover{ background:rgba(239,68,68,.08); border-color:rgba(239,68,68,.18); }
+
+.about-preview{ background:#f8fafc; border:1px solid rgba(0,0,0,.06); border-radius:12px; padding:12px; }
+
+
+
+
+/***************************************************************************************************************************/
+.cart-item {
+  background: #fff;
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.06);
+  margin-bottom: 12px;
+}
+.cart-summary {
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.06);
+  padding: 18px;
+}
+.btn-bk {
+  background: var(--color-primary) !important;
+  color: #fff !important;
+  border: none !important;
+  transition: all 0.2s ease;
+}
+.btn-bk:hover {
+  background: #f25b40 !important;
+}
+
+.bk-modal__backdrop {
+  backdrop-filter: blur(3px);
+}
+
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: #f8fafc;
+}
+
+main {
+  flex: 1;
+}
+
+.bk-topbar {
+  background: #ffffff !important;
+  color: #111827 !important;
+}
+.bk-footer {
+  background: #e5e7eb !important;
+  color: #111827 !important;
+}
+
+/* Soften Bootstrap utility colors on dashboard cards */
+.card.bg-primary {
+  background-color: #e0f2fe !important;
+  color: #0f172a !important;
+}
+.card.bg-success {
+  background-color: #dcfce7 !important;
+  color: #0f172a !important;
+}
+.card.bg-info {
+  background-color: #e0f7fa !important;
+  color: #0f172a !important;
+}
+.card.bg-warning {
+  background-color: #fef9c3 !important;
+  color: #0f172a !important;
+}
+.card.bg-dark {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+.product-card {
+  border-radius: 10px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.product-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+}
+
+body {
+  background-color: #f8fafc;
+  font-family: 'Poppins', 'Inter', sans-serif;
+}
+
+.container {
+  max-width: 1200px;
+}
+
+/* ===== Login Page ===== */
+.login-page {
+  background: #f8fafc;
+  font-family: 'Poppins', 'Inter', sans-serif;
+}
+
+/* Header Shopee */
+.login-header {
+  background: var(--color-primary);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Footer */
+.login-footer {
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 14px;
+}
+
+/* Container for login form */
+.login-container {
+  width: 100%;
+  max-width: 460px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+/* Chữ tiêu đề & nút */
+.login-heading {
+  font-family: 'Poppins', 'Inter', sans-serif;
+  font-weight: 800;
+  color: #0f172a;
+  text-align: center;
+}
+
+/* Nút đăng nhập */
+.btn-bk {
+  background: var(--color-primary) !important;
+  color: #fff !important;
+  font-weight: 700;
+  border: none !important;
+  border-radius: 12px;
+  padding: 0.9rem 1rem;
+  transition: all 0.2s ease;
+}
+.btn-bk:hover {
+  background: #f25b40 !important;
+}
+
+/* Input form */
+.login-card .form-control {
+  border-radius: 10px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  transition: 0.2s;
+}
+.login-card .form-control:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(249, 115, 91, 0.25);
+}
+
+/* Register Page (kế thừa LoginPage) */
+.login-card {
+  background: linear-gradient(180deg, rgba(255,255,255,.9), rgba(255,255,255,.75));
+  border-radius: 20px;
+  padding: 26px 28px 32px;
+  box-shadow: 0 12px 32px rgba(13,71,161,.18);
+  backdrop-filter: blur(6px);
+}
+.login-heading {
+  font-weight: 800;
+  font-size: 28px;
+  line-height: 1.2;
+  color: #0f172a;
+}
+.login-sub {
+  color: #475569;
+  font-size: 14px;
+  margin-bottom: 18px;
+}
+
+/* ===== Product Detail Page ===== */
+.product-detail-image {
+  border-radius: 12px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+}
+
+.product-detail-price {
+  color: #ee4d2d;
+  font-size: 1.8rem;
+  font-weight: 700;
+}
+
+.btn-bk {
+  background: #ee4d2d !important;
+  border-radius: 12px;
+  color: #fff !important;
+  padding: 10px 24px;
+  font-weight: 600;
+  transition: 0.2s;
+}
+
+.btn-bk:hover {
+  background: #d73211 !important;
+}
+

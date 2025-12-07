@@ -1,0 +1,100 @@
+version: "3.9"
+
+services:
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: shopeelike-mssql
+    environment:
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: "YourStrong!Passw0rd"
+    ports:
+      - "1433:1433"
+    volumes:
+      - mssql_data:/var/opt/mssql
+    networks:
+      - app-network
+
+  db-init:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: shopeelike-db-init
+    depends_on:
+      - mssql
+    restart: "no"
+    environment:
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: "YourStrong!Passw0rd"
+    volumes:
+      - ./database:/usr/src/database:ro
+    entrypoint:
+      - /bin/bash
+      - -c
+      - |
+        set -e
+        echo 'Waiting for SQL Server (up to 90s)...'
+        for i in {1..30}; do
+          /opt/mssql-tools18/bin/sqlcmd -C -S mssql,1433 -U sa -P 'YourStrong!Passw0rd' -Q "SELECT 1" && break
+          echo "SQL Server not ready yet (try $$i/30)..."
+          sleep 3
+        done
+
+        echo 'Checking if database "shopeelike" already exists...'
+        DB_EXISTS=$(/opt/mssql-tools18/bin/sqlcmd -C -S mssql,1433 -U sa -P 'YourStrong!Passw0rd' -h -1 -W -Q "SET NOCOUNT ON; IF DB_ID('shopeelike') IS NOT NULL SELECT 1 ELSE SELECT 0;")
+
+        if [ "$$DB_EXISTS" = "1" ]; then
+          echo 'Database "shopeelike" already exists. Skipping schema and mock data initialization.'
+        else
+          echo 'Initializing database schema and mock data for "shopeelike"...'
+          /opt/mssql-tools18/bin/sqlcmd -C -S mssql,1433 -U sa -P 'YourStrong!Passw0rd' -i /usr/src/database/shopeelike_mssql.sql
+          /opt/mssql-tools18/bin/sqlcmd -C -S mssql,1433 -U sa -P 'YourStrong!Passw0rd' -d shopeelike -i /usr/src/database/mockup_data_shopeelike_mssql.sql
+        fi
+
+        echo 'Ensuring application login "shopee_user" exists...'
+        /opt/mssql-tools18/bin/sqlcmd -C -S mssql,1433 -U sa -P 'YourStrong!Passw0rd' -d shopeelike -i /usr/src/database/create_app_user.sql
+        echo 'Database initialized.'
+    networks:
+      - app-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: shopeelike-backend
+    restart: unless-stopped
+    depends_on:
+      - mssql
+      - db-init
+    environment:
+      DB_HOST: mssql
+      DB_PORT: 1433
+      DB_USER: shopee_user
+      DB_PASSWORD: Password123!
+      DB_NAME: shopeelike
+      PORT: 5000
+      NODE_ENV: development
+      JWT_SECRET: this_is_a_dev_jwt_secret_change_me_1234567890
+      JWT_EXPIRE: 7d
+      FRONTEND_URL: http://localhost:3000
+    ports:
+      - "5000:5000"
+    networks:
+      - app-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: shopeelike-frontend
+    depends_on:
+      - backend
+    environment:
+      VITE_API_URL: http://localhost:5000/api
+    ports:
+      - "3000:3000"
+    networks:
+      - app-network
+
+networks:
+  app-network:
+
+volumes:
+  mssql_data:

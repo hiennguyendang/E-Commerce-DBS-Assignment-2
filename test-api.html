@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Backend Connection</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 10px;
+            cursor: pointer;
+        }
+        #result {
+            background: #f5f5f5;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 5px;
+            white-space: pre-wrap;
+        }
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Test Backend API Connection</h1>
+    
+    <button onclick="testProducts()">Test GET /api/products</button>
+    <button onclick="testCategories()">Test GET /api/categories</button>
+    <button onclick="clearResult()">Clear</button>
+    
+    <div id="result"></div>
+
+    <script>
+        const API_URL = 'http://localhost:5000/api';
+
+        async function testProducts() {
+            const result = document.getElementById('result');
+            result.innerHTML = '⏳ Loading products...';
+            
+            try {
+                const response = await fetch(API_URL + '/products');
+                const data = await response.json();
+                
+                result.innerHTML = `<span class="success">✅ SUCCESS!</span>\n\n`;
+                result.innerHTML += `Status: ${response.status}\n`;
+                result.innerHTML += `Products found: ${data.products?.length || 0}\n\n`;
+                result.innerHTML += JSON.stringify(data, null, 2);
+            } catch (error) {
+                result.innerHTML = `<span class="error">❌ ERROR!</span>\n\n`;
+                result.innerHTML += error.message;
+            }
+        }
+
+        async function testCategories() {
+            const result = document.getElementById('result');
+            result.innerHTML = '⏳ Loading categories...';
+            
+            try {
+                const response = await fetch(API_URL + '/categories');
+                const data = await response.json();
+                
+                result.innerHTML = `<span class="success">✅ SUCCESS!</span>\n\n`;
+                result.innerHTML += `Status: ${response.status}\n`;
+                result.innerHTML += `Categories found: ${data.length || 0}\n\n`;
+                result.innerHTML += JSON.stringify(data, null, 2);
+            } catch (error) {
+                result.innerHTML = `<span class="error">❌ ERROR!</span>\n\n`;
+                result.innerHTML += error.message;
+            }
+        }
+
+        function clearResult() {
+            document.getElementById('result').innerHTML = '';
+        }
+    </script>
+</body>
+</html>
