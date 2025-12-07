@@ -197,6 +197,7 @@ router.get('/:id', async (req, res) => {
          s.seller_id,
          s.shop_name,
          s.rating_avg,
+         s.user_id    AS seller_user_id,
          ua.display_name AS seller_owner_name
        FROM product p 
        JOIN seller s       ON s.seller_id = p.seller_id
@@ -228,6 +229,12 @@ router.get('/:id', async (req, res) => {
       [id]
     );
 
+    const [variants] = await pool.execute(
+      `SELECT product_id, variant_code, sku, list_price, stock_qty, is_active
+       FROM product_variant WHERE product_id = ? ORDER BY variant_code ASC`,
+      [id]
+    );
+
     res.json({
       id: product.id,
       name: product.name,
@@ -238,9 +245,17 @@ router.get('/:id', async (req, res) => {
       status: 'active',
       images,
       categories: cats,
+      variants: variants.map(v => ({
+        variant_code: v.variant_code,
+        sku: v.sku,
+        price: v.list_price,
+        stock: v.stock_qty,
+        is_active: v.is_active === 1 || v.is_active === true,
+      })),
       created_at: product.created_at,
       seller: {
         id: product.seller_id,
+        user_id: product.seller_user_id,
         shop_name: product.shop_name,
         rating_avg: product.rating_avg,
         owner_name: product.seller_owner_name,

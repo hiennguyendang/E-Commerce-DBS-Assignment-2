@@ -76,7 +76,7 @@ export default function App() {
         <Routes>
           <Route path="/app" element={<AppLayout user={user} onLogout={handleLogout} />}>
             <Route index element={<HomePage onAddToCart={handleAddToCart} />} />
-            <Route path="product/:id" element={<ProductDetailPage onAddToCart={handleAddToCart} />} />
+            <Route path="product/:id" element={<ProductDetailPage user={user} onAddToCart={handleAddToCart} />} />
             <Route path="seller/:sellerId" element={<SellerShopPage onAddToCart={handleAddToCart} />} />
             <Route path="cart" element={<CartPage />} />
             <Route path="checkout" element={<CheckoutPage />} />

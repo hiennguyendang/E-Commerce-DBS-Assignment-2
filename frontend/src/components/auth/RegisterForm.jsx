@@ -28,11 +28,6 @@ export default function RegisterForm() {
       return;
     }
 
-    if (form.password.length < 6) {
-      setError("Mật khẩu phải có ít nhất 6 ký tự!");
-      return;
-    }
-
     setLoading(true);
 
     try {
@@ -129,7 +124,6 @@ export default function RegisterForm() {
             type="password"
             className="form-control"
             name="password"
-            placeholder="Tối thiểu 6 ký tự"
             value={form.password}
             onChange={handleChange}
             required
@@ -143,7 +137,6 @@ export default function RegisterForm() {
             type="password"
             className="form-control"
             name="confirmPassword"
-            placeholder="Nhập lại mật khẩu"
             value={form.confirmPassword}
             onChange={handleChange}
             required

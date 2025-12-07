@@ -97,12 +97,21 @@ router.post('/items', [
     const { product_id, variant_code: variantCodeInput, quantity } = req.body;
 
     const [pRows] = await connection.execute(
-      `SELECT product_id, title, status FROM product WHERE product_id = ?`,
+      `SELECT p.product_id, p.title, p.status, p.seller_id, s.user_id AS seller_user_id
+       FROM product p
+       JOIN seller s ON s.seller_id = p.seller_id
+       WHERE p.product_id = ?`,
       [product_id]
     );
     if (pRows.length === 0 || pRows[0].status !== 'Active') {
       connection.release();
       return res.status(404).json({ error: 'Product not found or inactive' });
+    }
+
+    // Prevent seller from buying their own product
+    if (pRows[0].seller_user_id === req.user.id) {
+      connection.release();
+      return res.status(403).json({ error: 'Sellers cannot purchase their own products' });
     }
 
     let variantCode = variantCodeInput;

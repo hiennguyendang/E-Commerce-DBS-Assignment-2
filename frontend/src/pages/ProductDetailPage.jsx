@@ -4,7 +4,7 @@ import axiosInstance from "../utils/axiosConfig";
 import ProductDetail from "../components/product/ProductDetail";
 import ProductReviews from "../components/product/ProductReviews";
 
-export default function ProductDetailPage({ onAddToCart }) {
+export default function ProductDetailPage({ user, onAddToCart }) {
   const { id } = useParams();
   const [product, setProduct] = useState(null);
   const [activeTab, setActiveTab] = useState("details");
@@ -28,6 +28,7 @@ export default function ProductDetailPage({ onAddToCart }) {
           rating: p.rating_average || 0,
           reviews: p.rating_count || 0,
           seller: p.seller || null,
+          variants: p.variants || [],
         });
       } catch (err) {
         console.error("Failed to load product:", err);
@@ -50,7 +51,7 @@ export default function ProductDetailPage({ onAddToCart }) {
 
   return (
     <div className="container py-4">
-      <ProductDetail product={product} onAddToCart={onAddToCart} />
+      <ProductDetail product={product} user={user} onAddToCart={onAddToCart} />
 
       {/* Tabs for Description and Reviews */}
       <div className="mt-5">
