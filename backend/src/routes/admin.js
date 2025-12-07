@@ -48,6 +48,39 @@ router.get('/stats', authenticateToken, requireAdmin, async (req, res) => {
   }
 });
 
+// Get monthly revenue using fn_monthly_revenue function
+router.get('/revenue/monthly', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const year = parseInt(req.query.year || new Date().getFullYear(), 10);
+
+    const [result] = await pool.execute(
+      `SELECT 
+        1 AS month, dbo.fn_monthly_revenue(?, 1) AS revenue
+       UNION ALL SELECT 2, dbo.fn_monthly_revenue(?, 2)
+       UNION ALL SELECT 3, dbo.fn_monthly_revenue(?, 3)
+       UNION ALL SELECT 4, dbo.fn_monthly_revenue(?, 4)
+       UNION ALL SELECT 5, dbo.fn_monthly_revenue(?, 5)
+       UNION ALL SELECT 6, dbo.fn_monthly_revenue(?, 6)
+       UNION ALL SELECT 7, dbo.fn_monthly_revenue(?, 7)
+       UNION ALL SELECT 8, dbo.fn_monthly_revenue(?, 8)
+       UNION ALL SELECT 9, dbo.fn_monthly_revenue(?, 9)
+       UNION ALL SELECT 10, dbo.fn_monthly_revenue(?, 10)
+       UNION ALL SELECT 11, dbo.fn_monthly_revenue(?, 11)
+       UNION ALL SELECT 12, dbo.fn_monthly_revenue(?, 12)
+       ORDER BY month`,
+      [year, year, year, year, year, year, year, year, year, year, year, year]
+    );
+
+    res.json({
+      year,
+      data: result,
+    });
+  } catch (error) {
+    console.error('Get monthly revenue error:', error);
+    res.status(500).json({ error: 'Failed to get monthly revenue' });
+  }
+});
+
 router.get('/users', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const page = parseInt(req.query.page || '1', 10);

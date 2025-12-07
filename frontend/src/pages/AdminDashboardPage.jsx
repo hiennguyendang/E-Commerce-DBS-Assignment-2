@@ -43,8 +43,10 @@ export default function AdminDashboardPage() {
   const [users, setUsers] = useState([]);
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
+  const [monthlyRevenue, setMonthlyRevenue] = useState(null);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("stats"); // stats | users | products | orders
+  const [activeTab, setActiveTab] = useState("stats"); // stats | users | products | orders | revenue
   const [message, setMessage] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -58,8 +60,9 @@ export default function AdminDashboardPage() {
     if (activeTab === "users") fetchUsers();
     if (activeTab === "products") fetchProducts();
     if (activeTab === "orders") fetchOrders();
+    if (activeTab === "revenue") fetchMonthlyRevenue();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab]);
+  }, [activeTab, selectedYear]);
 
   const showError = (text) => setMessage({ type: "error", text });
   const showSuccess = (text) => setMessage({ type: "success", text });
@@ -107,6 +110,18 @@ export default function AdminDashboardPage() {
     } catch (err) {
       console.error("Lỗi tải danh sách đơn hàng:", err);
       showError("Không thể tải danh sách đơn hàng.");
+    }
+  };
+
+  const fetchMonthlyRevenue = async () => {
+    try {
+      const res = await axiosInstance.get("/admin/revenue/monthly", {
+        params: { year: selectedYear },
+      });
+      setMonthlyRevenue(res.data);
+    } catch (err) {
+      console.error("Lỗi tải doanh thu theo tháng:", err);
+      showError("Không thể tải dữ liệu doanh thu.");
     }
   };
 
@@ -230,6 +245,14 @@ export default function AdminDashboardPage() {
             onClick={() => setActiveTab("orders")}
           >
             Quản lý đơn hàng
+          </button>
+        </li>
+        <li className="nav-item">
+          <button
+            className={`nav-link ${activeTab === "revenue" ? "active" : ""}`}
+            onClick={() => setActiveTab("revenue")}
+          >
+            Doanh thu theo tháng
           </button>
         </li>
         <li className="nav-item">
@@ -575,6 +598,125 @@ export default function AdminDashboardPage() {
               )}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Monthly Revenue */}
+      {activeTab === "revenue" && (
+        <div className="bg-white rounded shadow-sm p-4">
+          <div className="d-flex justify-content-between align-items-center mb-4">
+            <h5 className="fw-bold mb-0">
+              <i className="bi bi-calendar-month me-2" />
+              Doanh thu theo tháng
+            </h5>
+            <div className="d-flex align-items-center gap-2">
+              <label className="mb-0 me-2">Năm:</label>
+              <select
+                className="form-select form-select-sm"
+                style={{ width: "120px" }}
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(parseInt(e.target.value, 10))}
+              >
+                {[...Array(5)].map((_, i) => {
+                  const year = new Date().getFullYear() - i;
+                  return (
+                    <option key={year} value={year}>
+                      {year}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+          </div>
+
+          {!monthlyRevenue ? (
+            <div className="text-center py-5 text-muted">
+              <Spinner message="Đang tải dữ liệu..." />
+            </div>
+          ) : (
+            <>
+              <div className="table-responsive">
+                <table className="table table-hover table-bordered">
+                  <thead className="table-light">
+                    <tr>
+                      <th className="text-center">Tháng</th>
+                      <th className="text-end">Doanh thu</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {monthlyRevenue.data?.map((item) => (
+                      <tr key={item.month}>
+                        <td className="text-center fw-bold">
+                          Tháng {item.month}/{monthlyRevenue.year}
+                        </td>
+                        <td className="text-end">
+                          {formatCurrencyVN(item.revenue)}
+                        </td>
+                      </tr>
+                    ))}
+                    <tr className="table-info fw-bold">
+                      <td className="text-center">Tổng cộng</td>
+                      <td className="text-end">
+                        {formatCurrencyVN(
+                          monthlyRevenue.data?.reduce(
+                            (sum, item) => sum + parseFloat(item.revenue || 0),
+                            0
+                          ) || 0
+                        )}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Bar Chart Visualization */}
+              <div className="mt-4">
+                <h6 className="text-muted mb-3">Biểu đồ doanh thu</h6>
+                <div className="row g-2">
+                  {monthlyRevenue.data?.map((item) => {
+                    const maxRevenue = Math.max(
+                      ...monthlyRevenue.data.map((d) => parseFloat(d.revenue || 0))
+                    );
+                    const percentage =
+                      maxRevenue > 0
+                        ? (parseFloat(item.revenue || 0) / maxRevenue) * 100
+                        : 0;
+
+                    return (
+                      <div key={item.month} className="col-12">
+                        <div className="d-flex align-items-center">
+                          <div
+                            className="text-end pe-2"
+                            style={{ width: "80px", fontSize: "0.85rem" }}
+                          >
+                            T{item.month}
+                          </div>
+                          <div className="flex-grow-1">
+                            <div
+                              className="bg-primary rounded"
+                              style={{
+                                width: `${percentage}%`,
+                                height: "25px",
+                                minWidth: percentage > 0 ? "30px" : "0",
+                                transition: "width 0.3s ease",
+                              }}
+                              title={formatCurrencyVN(item.revenue)}
+                            />
+                          </div>
+                          <div
+                            className="ps-2"
+                            style={{ width: "150px", fontSize: "0.85rem" }}
+                          >
+                            {formatCurrencyVN(item.revenue)}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>
