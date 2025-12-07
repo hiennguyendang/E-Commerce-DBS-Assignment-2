@@ -8,7 +8,7 @@ const { authenticateToken } = require('../middleware/auth');
 
 router.post('/register', [
   body('email').isEmail().withMessage('Please provide a valid email'),
-  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters long'),
+  body('password').notEmpty().withMessage('Password is required'),
   body('userName').notEmpty().withMessage('Username is required'),
   body('displayName').notEmpty().withMessage('Display name is required'),
   body('phoneNumber').optional().isString(),
